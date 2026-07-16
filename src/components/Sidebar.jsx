@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import './Sidebar.css';
 
 const API = 'http://localhost:3001/api';
+const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
 
 const mainLinks = [
   { path: '/', label: 'Dashboard', icon: 'fa-solid fa-house' },
@@ -109,12 +110,9 @@ export default function Sidebar() {
       </nav>
 
       <div className="sidebar-footer">
-        <div className="sidebar-user">
-          <img src="/logos/gerald.jpg" alt="Gerald Caraballo" className="sidebar-user-avatar" draggable="false" />
-          <div className="sidebar-user-info">
-            <span className="sidebar-user-name">Gerald Caraballo</span>
-            <span className="sidebar-user-role">Director General</span>
-          </div>
+        <div className="sidebar-build-info">
+          <span className="sidebar-build-label">Build</span>
+          <span className="sidebar-build-version">v{APP_VERSION}</span>
         </div>
       </div>
 
