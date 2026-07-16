@@ -42,14 +42,6 @@ export default function GranjasEden() {
     setFarms(Array.isArray(data) ? data : []);
   }, [period]);
 
-  useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
-
-  useEffect(() => {
-    fetchFarms();
-  }, [fetchFarms]);
-
   const fetchAll = useCallback(async () => {
     const [p, m, tx] = await Promise.all([
       fetch(`${API}/projects/${SLUG}`).then(r => r.json()),
@@ -60,6 +52,14 @@ export default function GranjasEden() {
     setAllMembers(m);
     setProjectMembers(m.filter(memb => memb.projects.some(proj => proj.name === p.name)));
     setTransactions(tx.transactions || []);
+    fetchFarms();
+  }, [fetchFarms]);
+
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
+
+  useEffect(() => {
     fetchFarms();
   }, [fetchFarms]);
 
