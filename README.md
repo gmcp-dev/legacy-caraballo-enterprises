@@ -1,16 +1,40 @@
-# React + Vite
+# LEGACY Caraballo Enterprises
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Aplicación desktop de Electron para la gestión interna de LEGACY Caraballo Enterprises.
 
-Currently, two official plugins are available:
+## Desarrollo
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+npm run dev
+npm run server
+npm run electron:dev
+```
 
-## React Compiler
+## Publicación y despliegue
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+La app está preparada para publicar builds Windows en GitHub Releases y que la instalación local detecte actualizaciones mediante electron-updater.
 
-## Expanding the Oxlint configuration
+### 1. Preparar una nueva versión
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+```bash
+npm run release:patch:publish
+# o
+npm run release:minor:publish
+# o
+npm run release:major:publish
+```
+
+Estos comandos:
+- crean la nueva versión con standard-version,
+- generan el changelog,
+- crean un tag de GitHub,
+- suben el tag al remoto.
+
+### 2. GitHub Actions publica el instalador
+
+Al empujarse el tag, el workflow en [.github/workflows/release.yml](.github/workflows/release.yml) construye la app y la publica como release en GitHub.
+
+### 3. Actualización en las PCs instaladas
+
+La app instalada consultará el release publicado y, si detecta una versión superior, descargará la actualización automáticamente.
