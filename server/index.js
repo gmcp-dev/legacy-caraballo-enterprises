@@ -8,6 +8,7 @@ const memberRoutes = require('./memberRoutes');
 const app = express();
 const PORT = process.env.PORT || 3001;
 const isDev = process.env.NODE_ENV === 'development';
+const distPath = path.resolve(process.env.DIST_PATH || path.join(__dirname, '..', 'dist'));
 
 app.use(cors());
 app.use(express.json());
@@ -21,9 +22,11 @@ app.use('/api', farmRoutes);
 app.use('/api', memberRoutes);
 
 if (!isDev) {
-  const distPath = path.join(__dirname, '..', 'dist');
   app.use(express.static(distPath));
-  app.get('/{*splat}', (req, res) => {
+  app.use((req, res) => {
+    if (req.path.startsWith('/api')) {
+      return res.status(404).json({ error: 'Not found' });
+    }
     res.sendFile(path.join(distPath, 'index.html'));
   });
 }
