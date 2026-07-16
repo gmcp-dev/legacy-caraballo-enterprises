@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.5](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.1.4...v1.1.5) (2026-07-16)
+
+
+### Features
+
+* add preload script to expose app version to renderer process ([912c2b5](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/912c2b5a8371d9fe2e4fa39af7d7bd90576345b1))
+* enable auto-hide for menu bar in main window ([c388e90](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/c388e901cf859602fe3af0c3b508ab029e57d69c))
+
 ### [1.1.4](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.1.3...v1.1.4) (2026-07-16)
 
 ### [1.1.3](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.1.2...v1.1.3) (2026-07-16)
