@@ -26,8 +26,8 @@
     "productName": "LEGACY - Caraballo Enterprises",
     "publish": {
       "provider": "github",
-      "owner": "TU_USUARIO",
-      "repo": "legacy-enterprises",
+      "owner": "gmcp-dev",
+      "repo": "legacy-caraballo-enterprises",
       "releaseType": "release"
     },
     "directories": {
