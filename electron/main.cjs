@@ -187,7 +187,7 @@ function waitForServer(successCallback, failureCallback, attempts = 0) {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1400,
+    width: 1600,
     height: 900,
     minWidth: 1024,
     minHeight: 600,
