@@ -4,6 +4,7 @@ const http = require('http');
 const { autoUpdater } = require('electron-updater');
 
 const isDev = !app.isPackaged;
+process.env.APP_VERSION = app.getVersion();
 
 autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;

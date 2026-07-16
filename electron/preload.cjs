@@ -1,5 +1,5 @@
-const { contextBridge, app } = require('electron');
+const { contextBridge } = require('electron');
 
 contextBridge.exposeInMainWorld('electronApp', {
-  appVersion: app.getVersion(),
+  appVersion: process.env.APP_VERSION || 'dev',
 });
