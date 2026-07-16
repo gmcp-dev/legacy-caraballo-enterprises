@@ -199,8 +199,11 @@ function createWindow() {
       contextIsolation: true,
     },
     backgroundColor: '#0a0a0a',
+    autoHideMenuBar: true,
     show: false,
   });
+
+  mainWindow.setMenuBarVisibility(false);
 
   if (isDev) {
     mainWindow.webContents.openDevTools({ mode: 'detach' });
