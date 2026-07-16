@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import './Sidebar.css';
 
 const API = 'http://localhost:3001/api';
@@ -23,10 +23,7 @@ function slugify(name) {
 
 export default function Sidebar() {
   const location = useLocation();
-  const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ name: '', description: '' });
 
   useEffect(() => {
     fetchProjects();
@@ -36,21 +33,6 @@ export default function Sidebar() {
     const res = await fetch(`${API}/projects`);
     const data = await res.json();
     setProjects(Array.isArray(data) ? data : []);
-  };
-
-  const createProject = async (e) => {
-    e.preventDefault();
-    if (!form.name.trim()) return;
-    const res = await fetch(`${API}/projects`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-    const project = await res.json();
-    setForm({ name: '', description: '' });
-    setShowModal(false);
-    fetchProjects();
-    navigate(`/projects/${project.slug}`);
   };
 
   return (
@@ -82,9 +64,6 @@ export default function Sidebar() {
 
         <div className="sidebar-section-header">
           <span className="sidebar-section-label">Proyectos</span>
-          <button className="sidebar-add-btn" onClick={() => setShowModal(true)} title="Nuevo proyecto">
-            <i className="fa-solid fa-plus" />
-          </button>
         </div>
 
         {projects.map((project) => {
@@ -116,43 +95,6 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2 className="modal-title">Nuevo Proyecto</h2>
-              <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
-            </div>
-            <form onSubmit={createProject}>
-              <div className="form-group">
-                <label className="form-label">Nombre del Proyecto</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Ej: Granjas, Logistica, Bienes Raices..."
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  autoFocus
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Descripcion</label>
-                <textarea
-                  className="form-input form-textarea"
-                  placeholder="Descripcion breve del proyecto..."
-                  rows={3}
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                />
-              </div>
-              <div className="modal-actions">
-                <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-gold">Crear Proyecto</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </aside>
   );
 }
