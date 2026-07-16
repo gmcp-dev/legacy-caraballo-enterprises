@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import './MemberDetail.css';
 
@@ -8,42 +8,29 @@ export default function MemberDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const [member, setMember] = useState(null);
-  const [projects, setProjects] = useState([]);
-  const [farms, setFarms] = useState([]);
   const [roles, setRoles] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
   const [showInvestModal, setShowInvestModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [investForm, setInvestForm] = useState({ amount: '', description: '' });
   const [editForm, setEditForm] = useState({});
-  const [editingProject, setEditingProject] = useState(null);
-  const [projectForm, setProjectForm] = useState({ name: '', description: '' });
-  const [allMembers, setAllMembers] = useState([]);
-  const [editingSociosProject, setEditingSociosProject] = useState(null);
-  const [sociosMemberIds, setSociosMemberIds] = useState([]);
 
   const roleMap = {};
   roles.forEach(r => { roleMap[r.slug] = r; });
 
-  useEffect(() => {
-    fetchAll();
-  }, [slug]);
-
-  const fetchAll = async () => {
-    const [m, p, f, r, allM] = await Promise.all([
+  const fetchAll = useCallback(async () => {
+    const [m, r] = await Promise.all([
       fetch(`${API}/members/${slug}`).then(r => r.json()),
-      fetch(`${API}/projects`).then(r => r.json()),
-      fetch(`${API}/projects/granjas-eden/farms`).then(r => r.ok ? r.json() : []),
       fetch(`${API}/roles`).then(r => r.json()),
-      fetch(`${API}/members`).then(r => r.json()),
     ]);
     setMember(m);
-    setProjects(p);
-    setFarms(Array.isArray(f) ? f : []);
     setRoles(r);
-    setAllMembers(allM);
     setEditForm({ name: m.name, photo: m.photo || '', roles: m.roles.map(r => r.role) });
-  };
+  }, [slug]);
+
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
 
   const addInvestment = async (e) => {
     e.preventDefault();
@@ -96,30 +83,6 @@ export default function MemberDetail() {
       ...prev,
       roles: prev.roles.includes(roleSlug) ? prev.roles.filter(r => r !== roleSlug) : [...prev.roles, roleSlug],
     }));
-  };
-
-  const saveProject = async (projectSlug) => {
-    await fetch(`${API}/projects/${projectSlug}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(projectForm),
-    });
-    setEditingProject(null);
-    fetchAll();
-  };
-
-  const saveSocios = async (projectSlug) => {
-    await fetch(`${API}/projects/${projectSlug}/socios`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ memberIds: sociosMemberIds }),
-    });
-    setEditingSociosProject(null);
-    fetchAll();
-  };
-
-  const toggleSocioMember = (memberId) => {
-    setSociosMemberIds(prev => prev.includes(memberId) ? prev.filter(id => id !== memberId) : [...prev, memberId]);
   };
 
   const formatMoney = (amount) => {

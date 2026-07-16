@@ -10,9 +10,6 @@ function slugify(text) {
 
 export default function Members() {
   const [members, setMembers] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [farms, setFarms] = useState([]);
-  const [stats, setStats] = useState(null);
   const [roles, setRoles] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -33,17 +30,11 @@ export default function Members() {
   }, []);
 
   const fetchAll = async () => {
-    const [m, p, f, s, r] = await Promise.all([
+    const [m, r] = await Promise.all([
       fetch(`${API}/members`).then(r => r.json()),
-      fetch(`${API}/projects`).then(r => r.json()),
-      fetch(`${API}/projects/granjas-eden/farms`).then(r => r.ok ? r.json() : []),
-      fetch(`${API}/members/stats/summary`).then(r => r.json()),
       fetch(`${API}/roles`).then(r => r.json()),
     ]);
     setMembers(m);
-    setProjects(p);
-    setFarms(Array.isArray(f) ? f : []);
-    setStats(s);
     setRoles(r);
   };
 
