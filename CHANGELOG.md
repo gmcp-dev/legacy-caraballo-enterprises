@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.3](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.1.2...v1.1.3) (2026-07-16)
+
+
+### Features
+
+* update sidebar to display build version and remove user info ([fbea9f3](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/fbea9f3226cb3007052245e109b1c9ee8c58f59e))
+
 ### [1.1.2](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.1.1...v1.1.2) (2026-07-16)
 
 
