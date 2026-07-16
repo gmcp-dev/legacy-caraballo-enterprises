@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.6](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.1.5...v1.1.6) (2026-07-16)
+
+
+### Features
+
+* expose app version through environment variable in preload script ([41b826e](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/41b826e2b7aad3feb68053106371fa2ec64ae5c0))
+* increase main window width and update page title format ([ed4e4ca](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/ed4e4ca618ffdd16a891cf7e201eedd78389fc6d))
+
 ### [1.1.5](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.1.4...v1.1.5) (2026-07-16)
 
 
