@@ -1,4 +1,4 @@
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import './Header.css';
 
 const pageTitles = {
@@ -46,16 +46,6 @@ export default function Header() {
             </span>
           ))}
         </span>
-      </div>
-      <div className="header-right">
-        <div className="header-search">
-          <span className="header-search-icon">⌕</span>
-          <input type="text" placeholder="Buscar..." className="header-search-input" />
-        </div>
-        <div className="header-notifications">
-          <span className="header-notif-icon">◎</span>
-          <span className="header-notif-badge">3</span>
-        </div>
       </div>
     </header>
   );
