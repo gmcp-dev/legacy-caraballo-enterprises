@@ -3,7 +3,9 @@ import { NavLink, useLocation } from 'react-router-dom';
 import './Sidebar.css';
 
 const API = 'http://localhost:3001/api';
-const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
+const APP_VERSION = typeof window !== 'undefined' && window.electronApp?.appVersion
+  ? window.electronApp.appVersion
+  : (typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev');
 
 const mainLinks = [
   { path: '/', label: 'Dashboard', icon: 'fa-solid fa-house' },

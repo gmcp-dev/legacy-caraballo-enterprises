@@ -194,6 +194,7 @@ function createWindow() {
     title: 'LEGACY - Caraballo Enterprises',
     icon: path.join(__dirname, '..', 'build', 'icon.ico'),
     webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'),
       nodeIntegration: false,
       contextIsolation: true,
     },
