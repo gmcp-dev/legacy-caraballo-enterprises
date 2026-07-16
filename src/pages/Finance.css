@@ -1,0 +1,15 @@
+.finance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.finance-sections {
+  display: flex;
+  flex-direction: column;
+}
+
+.finance-section {
+  width: 100%;
+}

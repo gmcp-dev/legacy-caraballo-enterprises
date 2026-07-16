@@ -1,0 +1,12 @@
+.ge-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.ge-period-filter {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}

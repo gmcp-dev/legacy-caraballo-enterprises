@@ -1,0 +1,161 @@
+.fd-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.fd-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.fd-title {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.fd-title:hover {
+  color: var(--gold-primary);
+}
+
+.fd-owner {
+  font-size: 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.fd-owner:hover {
+  color: var(--gold-primary);
+}
+
+.fd-edit-inline {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.fd-edit-inline .form-input {
+  width: 250px;
+}
+
+.fd-inv-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.fd-inv-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.fd-inv-icon {
+  font-size: 28px;
+}
+
+.fd-inv-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.fd-inv-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.fd-inv-qty {
+  font-size: 24px;
+  font-weight: 700;
+  font-family: 'Playfair Display', serif;
+}
+
+.fd-inv-price {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.fd-inv-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gold-primary);
+  font-family: 'Playfair Display', serif;
+}
+
+.fd-inv-edit-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fd-inv-edit-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: border-color 0.2s;
+}
+
+.fd-inv-edit-card:hover {
+  border-color: var(--border-gold);
+}
+
+.fd-inv-edit-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.fd-inv-edit-icon {
+  font-size: 24px;
+}
+
+.fd-inv-edit-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: block;
+}
+
+.fd-inv-edit-qty {
+  font-size: 12px;
+  display: block;
+}
+
+.fd-inv-edit-fields {
+  display: flex;
+  gap: 12px;
+}
+
+.fd-inv-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fd-inv-field-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.fd-inv-input {
+  width: 100px;
+  text-align: right;
+}
