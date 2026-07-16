@@ -3,16 +3,6 @@ const router = express.Router();
 const db = require('./db');
 const { slugify, matchSlug } = require('./slugify');
 
-const SPECIAL_ROLES = ['socio', 'inversionista', 'propietario'];
-
-function getMemberBySlug(slug) {
-  const member = db.prepare('SELECT * FROM members WHERE id = (SELECT id FROM members WHERE 1=1)').get();
-  const all = db.prepare('SELECT * FROM members').all();
-  const found = all.find(m => matchSlug(m.name, slug));
-  if (!found) return null;
-  return getMemberById(found.id);
-}
-
 function getMemberById(id) {
   const member = db.prepare('SELECT * FROM members WHERE id = ?').get(id);
   if (!member) return null;

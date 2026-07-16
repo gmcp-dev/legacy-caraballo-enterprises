@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import './Finance.css';
 
 const API = 'http://localhost:3001/api';
@@ -18,19 +18,19 @@ export default function Finance() {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ type: 'income', amount: '', description: '' });
 
-  useEffect(() => {
-    fetchTreasury();
-    fetch(`${API}/treasury/summary`).then(r => r.json()).then(setSummary);
-  }, [period, filter]);
-
-  const fetchTreasury = async () => {
+  const fetchTreasury = useCallback(async () => {
     const params = new URLSearchParams();
     if (period !== 'all') params.set('period', period);
     if (filter !== 'all') params.set('type', filter);
     const res = await fetch(`${API}/treasury?${params}`);
     const data = await res.json();
     setTreasury(data);
-  };
+  }, [filter, period]);
+
+  useEffect(() => {
+    fetchTreasury();
+    fetch(`${API}/treasury/summary`).then(r => r.json()).then(setSummary);
+  }, [fetchTreasury]);
 
   const formatMoney = (amount) => {
     return new Intl.NumberFormat('es-VE', { style: 'currency', currency: 'USD', currencyDisplay: 'narrowSymbol' }).format(amount || 0);

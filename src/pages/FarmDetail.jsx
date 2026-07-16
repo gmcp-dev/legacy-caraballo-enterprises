@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import './FarmDetail.css';
 
@@ -30,28 +30,28 @@ export default function FarmDetail() {
   const [productForm, setProductForm] = useState({ name: '', image: '', price: '' });
   const [members, setMembers] = useState([]);
 
+  const fetchFarm = useCallback(async () => {
+    const res = await fetch(`${API}/projects/${PROJECT_SLUG}/farms/${farmSlug}?period=${period}`);
+    const data = await res.json();
+    setFarm(data);
+  }, [farmSlug, period]);
+
+  const fetchProducts = useCallback(async () => {
+    const res = await fetch(`${API}/projects/${PROJECT_SLUG}/farms/${farmSlug}/products`);
+    const data = await res.json();
+    setProducts(Array.isArray(data) ? data : []);
+  }, [farmSlug]);
+
   useEffect(() => {
     fetchFarm();
     fetchProducts();
-  }, [farmSlug, period]);
+  }, [fetchFarm, fetchProducts]);
 
   useEffect(() => {
     fetch(`${API}/members`).then(r => r.json()).then(d => {
       setMembers(Array.isArray(d) ? d.filter(m => m.status === 'active') : []);
     }).catch(() => setMembers([]));
   }, []);
-
-  const fetchFarm = async () => {
-    const res = await fetch(`${API}/projects/${PROJECT_SLUG}/farms/${farmSlug}?period=${period}`);
-    const data = await res.json();
-    setFarm(data);
-  };
-
-  const fetchProducts = async () => {
-    const res = await fetch(`${API}/projects/${PROJECT_SLUG}/farms/${farmSlug}/products`);
-    const data = await res.json();
-    setProducts(Array.isArray(data) ? data : []);
-  };
 
   const addTransaction = async (e) => {
     e.preventDefault();

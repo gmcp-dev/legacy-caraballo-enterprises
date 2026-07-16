@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import './GranjasEden.css';
 
@@ -36,15 +36,21 @@ export default function GranjasEden() {
   const [showTxModal, setShowTxModal] = useState(false);
   const [txForm, setTxForm] = useState({ type: 'income', amount: '', description: '' });
 
+  const fetchFarms = useCallback(async () => {
+    const res = await fetch(`${API}/projects/${SLUG}/farms?period=${period}`);
+    const data = await res.json();
+    setFarms(Array.isArray(data) ? data : []);
+  }, [period]);
+
   useEffect(() => {
     fetchAll();
-  }, []);
+  }, [fetchAll]);
 
   useEffect(() => {
     fetchFarms();
-  }, [period]);
+  }, [fetchFarms]);
 
-  const fetchAll = async () => {
+  const fetchAll = useCallback(async () => {
     const [p, m, tx] = await Promise.all([
       fetch(`${API}/projects/${SLUG}`).then(r => r.json()),
       fetch(`${API}/members`).then(r => r.json()),
@@ -55,13 +61,7 @@ export default function GranjasEden() {
     setProjectMembers(m.filter(memb => memb.projects.some(proj => proj.name === p.name)));
     setTransactions(tx.transactions || []);
     fetchFarms();
-  };
-
-  const fetchFarms = async () => {
-    const res = await fetch(`${API}/projects/${SLUG}/farms?period=${period}`);
-    const data = await res.json();
-    setFarms(Array.isArray(data) ? data : []);
-  };
+  }, [fetchFarms]);
 
   const startEdit = (field, value) => {
     setEditingField(field);
@@ -151,8 +151,6 @@ export default function GranjasEden() {
   };
 
   const balance = (project?.total_earned || 0) - (project?.total_expenses || 0);
-  const totalEntradas = farms.filter(f => f.status === 'active').reduce((a, f) => a + (f.entradas || 0), 0);
-  const totalSalidas = farms.filter(f => f.status === 'active').reduce((a, f) => a + (f.salidas || 0), 0);
   const totalInventario = farms.filter(f => f.status === 'active').reduce((a, f) => a + (f.inventory_value || 0), 0);
   const availableMembers = allMembers.filter(m => m.status === 'active' && !projectMembers.some(pm => pm.id === m.id));
 
