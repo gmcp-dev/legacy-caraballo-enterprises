@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.11](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.1.10...v1.1.11) (2026-07-18)
+
+
+### Bug Fixes
+
+* move server to extraResources so forked process can access dependencies ([d620bc2](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/d620bc2af0f58dc912108d02169d00d225102907))
+
 ### [1.1.10](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.1.9...v1.1.10) (2026-07-18)
 
 ### [1.1.9](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.1.8...v1.1.9) (2026-07-18)
