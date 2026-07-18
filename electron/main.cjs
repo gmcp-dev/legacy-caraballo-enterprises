@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, shell, ipcMain } = require('electron');
 const path = require('path');
 const http = require('http');
 const { autoUpdater } = require('electron-updater');
@@ -11,6 +11,16 @@ autoUpdater.autoInstallOnAppQuit = true;
 
 let mainWindow;
 let serverProcess;
+let appLoadAllowed = false;
+let updateCheckCompleted = false;
+let updateState = {
+  status: 'checking',
+  currentVersion: app.getVersion(),
+  availableVersion: null,
+  progress: null,
+  error: null,
+  canInstall: false,
+};
 
 function getServerPath() {
   if (isDev) {
@@ -56,60 +66,29 @@ function getDistPath() {
   return isDev ? path.join(__dirname, '..', 'dist') : path.join(process.resourcesPath, 'app.asar', 'dist');
 }
 
-function showSplashScreen(message = 'Iniciando aplicación', subtitle = 'Preparando los servicios necesarios...') {
+function broadcastUpdateState() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.webContents.send('update-state', { ...updateState });
+}
 
-  const html = `<!DOCTYPE html>
-    <html lang="es">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <style>
-          :root { color-scheme: dark; }
-          body {
-            margin: 0;
-            font-family: Inter, Segoe UI, Arial, sans-serif;
-            background: linear-gradient(135deg, #060606 0%, #121212 100%);
-            color: #f5e8c8;
-            display: grid;
-            place-items: center;
-            min-height: 100vh;
-          }
-          .card {
-            text-align: center;
-            padding: 36px 42px;
-            border-radius: 18px;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(201,168,76,0.25);
-            box-shadow: 0 12px 30px rgba(0,0,0,0.35);
-            max-width: 520px;
-          }
-          .spinner {
-            width: 52px;
-            height: 52px;
-            border: 4px solid rgba(201,168,76,0.2);
-            border-top: 4px solid #c9a84c;
-            border-radius: 50%;
-            margin: 0 auto 22px;
-            animation: spin 0.9s linear infinite;
-          }
-          @keyframes spin { to { transform: rotate(360deg); } }
-          h1 { margin: 0 0 8px; font-size: 24px; }
-          p { margin: 0; color: #d8d0b4; line-height: 1.5; }
-          .sub { margin-top: 10px; font-size: 14px; opacity: 0.85; }
-        </style>
-      </head>
-      <body>
-        <div class="card">
-          <div class="spinner"></div>
-          <h1>${message}</h1>
-          <p>${subtitle}</p>
-          <p class="sub">Por favor espera unos segundos...</p>
-        </div>
-      </body>
-    </html>`;
+function renderUpdateScreen() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  const appUrl = isDev ? 'http://localhost:5173/update' : 'http://localhost:3001/update';
+  mainWindow.loadURL(appUrl);
+  mainWindow.webContents.once('did-finish-load', () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    mainWindow.show();
+    broadcastUpdateState();
+  });
+}
 
-  mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+function showSplashScreen() {
+  updateState.status = 'checking';
+  updateState.availableVersion = null;
+  updateState.progress = null;
+  updateState.error = null;
+  updateState.canInstall = false;
+  renderUpdateScreen();
 }
 
 function showErrorScreen(message = 'No se pudo iniciar la aplicación', details = 'Revisa la consola o el servidor para obtener más información.') {
@@ -159,11 +138,16 @@ function showErrorScreen(message = 'No se pudo iniciar la aplicación', details 
 
 function loadAppUrl() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
-
-  showSplashScreen('Cargando interfaz', 'Esperando que la aplicación responda...');
+  if (!appLoadAllowed) return;
+  if (!updateCheckCompleted) return;
+  if (updateState.status === 'checking' || updateState.status === 'available' || updateState.status === 'downloading' || updateState.status === 'downloaded' || updateState.status === 'installing') return;
 
   const appUrl = isDev ? 'http://localhost:5173' : 'http://localhost:3001';
   mainWindow.loadURL(appUrl);
+  mainWindow.webContents.once('did-finish-load', () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    mainWindow.show();
+  });
 }
 
 function waitForServer(successCallback, failureCallback, attempts = 0) {
@@ -237,29 +221,99 @@ app.whenReady().then(() => {
   startServer();
   createWindow();
   showSplashScreen('Iniciando aplicación', 'Conectando con los servicios necesarios...');
-  waitForServer(loadAppUrl, () => {
+
+  waitForServer(() => {
+    appLoadAllowed = true;
+    renderUpdateScreen();
+  }, () => {
     showErrorScreen('No se pudo iniciar la aplicación', 'No fue posible conectar con el backend o la interfaz. Revisa que el servidor esté disponible.');
   });
 
   if (!isDev) {
-    autoUpdater.checkForUpdatesAndNotify().catch(() => {});
+    autoUpdater.checkForUpdatesAndNotify().catch((err) => {
+      updateState.status = 'error';
+      updateState.error = err?.message || 'No se pudo comprobar actualizaciones';
+      broadcastUpdateState();
+      renderUpdateScreen();
+    });
+  } else {
+    updateState.status = 'ready';
+    updateState.availableVersion = null;
+    updateState.progress = null;
+    updateState.error = null;
+    updateState.canInstall = false;
+    updateCheckCompleted = true;
+    broadcastUpdateState();
+    loadAppUrl();
   }
+});
+
+autoUpdater.on('checking-for-update', () => {
+  updateState.status = 'checking';
+  updateState.error = null;
+  broadcastUpdateState();
+  renderUpdateScreen();
 });
 
 autoUpdater.on('update-available', (info) => {
-  if (mainWindow) {
-    mainWindow.webContents.send('update-available', info.version);
-  }
+  updateState.status = 'available';
+  updateState.availableVersion = info.version;
+  updateState.canInstall = true;
+  updateState.progress = null;
+  updateState.error = null;
+  broadcastUpdateState();
+  renderUpdateScreen();
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+  updateState.status = 'downloading';
+  updateState.progress = Math.round(progressObj.percent || 0);
+  broadcastUpdateState();
+  renderUpdateScreen();
 });
 
 autoUpdater.on('update-downloaded', () => {
-  if (mainWindow) {
-    mainWindow.webContents.send('update-downloaded');
+  updateState.status = 'downloaded';
+  updateState.progress = 100;
+  updateState.canInstall = true;
+  broadcastUpdateState();
+  renderUpdateScreen();
+});
+
+autoUpdater.on('update-not-available', () => {
+  updateState.status = 'ready';
+  updateState.availableVersion = null;
+  updateState.progress = null;
+  updateState.error = null;
+  updateState.canInstall = false;
+  updateCheckCompleted = true;
+  broadcastUpdateState();
+  if (appLoadAllowed) {
+    loadAppUrl();
   }
 });
 
 autoUpdater.on('error', (err) => {
+  updateState.status = 'error';
+  updateState.error = err?.message || 'No se pudo comprobar actualizaciones';
+  updateCheckCompleted = true;
+  broadcastUpdateState();
+  if (appLoadAllowed) {
+    loadAppUrl();
+  }
   console.error('Auto-update error:', err);
+});
+
+function installUpdateNow() {
+  if (!autoUpdater) return;
+  updateState.status = 'installing';
+  updateState.progress = 100;
+  broadcastUpdateState();
+  autoUpdater.quitAndInstall();
+}
+
+ipcMain.on('install-update-now', () => {
+  installUpdateNow();
 });
 
 app.on('window-all-closed', () => {
