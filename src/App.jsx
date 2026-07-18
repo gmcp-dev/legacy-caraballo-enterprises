@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Dashboard from './pages/Dashboard';
@@ -7,9 +8,30 @@ import FarmDetail from './pages/FarmDetail';
 import Members from './pages/Members';
 import MemberDetail from './pages/MemberDetail';
 import Finance from './pages/Finance';
+import UpdateScreen from './pages/UpdateScreen';
 import './styles/index.css';
 
 function App() {
+  const [showApp, setShowApp] = useState(false);
+
+  useEffect(() => {
+    if (!window.electronApp?.onUpdateState) {
+      setShowApp(true);
+      return;
+    }
+
+    const unsubscribe = window.electronApp.onUpdateState((state) => {
+      const isBusy = ['checking', 'available', 'downloading', 'downloaded', 'installing'].includes(state?.status);
+      setShowApp(!isBusy);
+    });
+
+    return () => unsubscribe?.();
+  }, []);
+
+  if (!showApp) {
+    return <UpdateScreen />;
+  }
+
   return (
     <Router>
       <div className="noise-overlay" />
