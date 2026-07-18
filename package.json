@@ -60,7 +60,8 @@
       },
       {
         "from": "server",
-        "to": "server"
+        "to": "server",
+        "filter": ["**/*", "!**/*.db", "!**/*.db-shm", "!**/*.db-wal"]
       }
     ]
   },
