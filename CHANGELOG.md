@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.8](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.1.7...v1.1.8) (2026-07-18)
+
+
+### Bug Fixes
+
+* add server dependencies to root and track build icon ([8988636](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/8988636388701b215f6a3f12c0f567b99b243767))
+* prevent duplicate releases in GitHub Actions workflow ([ffa8d91](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/ffa8d91f6e20320ff35c8a91a74eff87bf6dd4db))
+
 ### [1.1.7](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.1.6...v1.1.7) (2026-07-18)
 
 
