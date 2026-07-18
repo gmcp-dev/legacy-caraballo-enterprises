@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.9](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.1.8...v1.1.9) (2026-07-18)
+
+
+### Bug Fixes
+
+* update lock file with server dependencies ([9b456bf](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/9b456bf09ce9c0c5814875322e729415b8cecef5))
+
 ### [1.1.8](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.1.7...v1.1.8) (2026-07-18)
 
 
