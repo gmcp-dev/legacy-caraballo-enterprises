@@ -31,5 +31,16 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      - name: Publish Electron app
-        run: npm run electron:publish
+      - name: Build Electron app
+        run: npx electron-builder --win --publish never
+
+      - name: Create release and upload artifacts
+        shell: bash
+        run: |
+          TAG="${{ github.ref_name }}"
+          gh release delete "$TAG" --yes 2>/dev/null || true
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --generate-notes \
+            ./release/*.exe \
+            ./release/*.yml
