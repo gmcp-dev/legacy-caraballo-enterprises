@@ -16,14 +16,14 @@ function getServerPath() {
   if (isDev) {
     return path.join(__dirname, '..', 'server', 'index.js');
   }
-  return path.join(process.resourcesPath, 'app.asar.unpacked', 'server', 'index.js');
+  return path.join(process.resourcesPath, 'server', 'index.js');
 }
 
 function getServerCwd() {
   if (isDev) {
     return path.join(__dirname, '..', 'server');
   }
-  return path.join(process.resourcesPath, 'app.asar.unpacked', 'server');
+  return path.join(process.resourcesPath, 'server');
 }
 
 function startServer() {

@@ -28,6 +28,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install server dependencies
+        run: npm install --prefix server --omit=dev
+
       - name: Build frontend
         run: npm run build
 
