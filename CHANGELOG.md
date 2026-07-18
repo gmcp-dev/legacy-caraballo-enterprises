@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.7](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.1.6...v1.1.7) (2026-07-18)
+
+
+### Features
+
+* add UpdateScreen component with update status and progress display ([0a5a185](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/0a5a1859686eaaeac4867bbc306be869ebf813dd))
+* implement update state broadcasting and IPC communication for updates ([a855a03](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/a855a03f83474d64432029c20367cd9704924a78))
+* implement update state handling and conditional rendering for UpdateScreen ([745dba0](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/745dba014b251dedb5d46a914b2ee9710a15d002))
+
 ### [1.1.6](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.1.5...v1.1.6) (2026-07-16)
 
 
