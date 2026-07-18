@@ -12,6 +12,7 @@ dist
 dist-ssr
 release
 build
+!build/icon.ico
 *.local
 
 # Database
