@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.13](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.1.12...v1.1.13) (2026-07-19)
+
+
+### Features
+
+* add BancoPage and ClientDetail routes to App component ([31869e3](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/31869e3fa95675bea7e93437dface5f8c7dfd3f3))
+* add BancoPage component with initial layout and functionality ([90a19ec](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/90a19ec38cc5e1ad4725f9c083b88f0e512ad3f1))
+* add bank routes to API for enhanced functionality ([5cf699b](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/5cf699b716fa05bfc6a0519b3f085e0add795aff))
+* add BankReceipt component with layout, styling, and download functionality ([e8d1d37](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/e8d1d379fcc88bb832a4a4ba04f6a0818e4de252))
+* add ClientDetail and FarmDetail components with styling and functionality improvements ([9f3732f](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/9f3732fbb18b173bc07410c4961c0b46bf9184e9))
+* add icon for banco-maze project in Sidebar component ([fc219c7](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/fc219c715a957119f4aa0328262633f093f74191))
+* add projects module with project data and utility functions ([471adb1](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/471adb1f8ed7941c8050a5f4eb663f83afcadc95))
+* enhance farm routes with debt management and product inventory initialization ([e1b4d80](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/e1b4d80233dad2ced92a536f7649527536108b9a))
+* enhance member routes to include project details in member data ([53a9aec](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/53a9aec369ed140697e7fc1dca4995549bf7849e))
+* implement bank routes for clients, loans, payments, and stats ([f81fd28](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/f81fd28bb6ff54b4cef5991fa7905fa709d6ec7f))
+* update database schema to remove projects table and add bank-related tables ([35fa2ca](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/35fa2ca0b2dea5bd9380e120df3c7085e590fa27))
+
+
+### Bug Fixes
+
+* prevent server start in development mode ([26a6b71](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/26a6b717d5d2e9fca54d07b29cd4117115b854fd))
+* update empty state message in Dashboard component ([9282856](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/9282856999f5b09c963ef062be61a6aa889722ad))
+* update role check for displaying farms in MemberDetail ([2987159](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/2987159d748b675f6d91650868359544034d97f2))
+
 ### [1.1.12](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.1.11...v1.1.12) (2026-07-19)
 
 
