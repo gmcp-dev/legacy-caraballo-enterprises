@@ -165,7 +165,7 @@ export default function MemberDetail() {
             </div>
           )}
 
-          {member.roles.some(r => r.role === 'propietario') && member.farms.length > 0 && (
+          {member.roles.some(r => r.role === 'proveedor') && member.farms.length > 0 && (
             <div style={{ marginBottom: '32px' }}>
               <h3 className="detail-section-title">Granjas Propias</h3>
               <div className="md-associated-grid">
