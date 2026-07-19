@@ -93,10 +93,6 @@ export default function Finance() {
           <div className="card-label">Valor en Objetos</div>
           <div className="stat-value" style={{ color: '#a78bfa' }}>{formatMoney(summary?.totalObjectValue)}</div>
         </div>
-        <div className="stat-card">
-          <div className="card-label">Proyectos</div>
-          <div className="stat-value">{summary?.projects?.length || 0}</div>
-        </div>
       </div>
 
       {summary && summary.projects.length > 0 && (
