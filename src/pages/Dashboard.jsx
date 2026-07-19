@@ -58,7 +58,7 @@ export default function Dashboard() {
           <div className="empty-state-icon">◆</div>
           <div className="empty-state-title">Sin proyectos</div>
           <div className="empty-state-text">
-            <Link to="/finanzas" style={{ color: 'var(--gold-primary)' }}>Crea tu primer proyecto</Link>
+            No hay proyectos configurados
           </div>
         </div>
       ) : (
