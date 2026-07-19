@@ -277,7 +277,7 @@ router.post('/projects/:slug/farms/:farmSlug/transactions', (req, res) => {
     WHERE t.id = ?
   `).get(result.lastInsertRowid);
 
-  const treasuryType = type === 'salida' ? 'expense' : 'income';
+  const treasuryType = type === 'entrada' ? 'expense' : 'income';
   db.prepare('INSERT INTO treasury_transactions (type, amount, description, source, source_id, source_name) VALUES (?, ?, ?, ?, ?, ?)')
     .run(treasuryType, amount, description || `${farm.name}: ${type === 'entrada' ? 'Entrada' : 'Salida'}`, 'farm', farm.id, farm.name);
 
