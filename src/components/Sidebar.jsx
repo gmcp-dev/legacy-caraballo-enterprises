@@ -15,6 +15,7 @@ const mainLinks = [
 
 const projectIcons = {
   'granjas-eden': 'fa-solid fa-leaf',
+  'banco-maze': 'fa-solid fa-building-columns',
 };
 
 const defaultProjectIcon = 'fa-solid fa-briefcase';
