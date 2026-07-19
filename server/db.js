@@ -9,22 +9,13 @@ db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
 db.exec(`
-  CREATE TABLE IF NOT EXISTS projects (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    description TEXT,
-    status TEXT DEFAULT 'active',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-
   CREATE TABLE IF NOT EXISTS transactions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id INTEGER NOT NULL,
     type TEXT NOT NULL CHECK(type IN ('investment', 'earning', 'expense')),
     amount REAL NOT NULL,
     description TEXT,
-    date DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    date DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
   CREATE TABLE IF NOT EXISTS farms (
@@ -33,8 +24,7 @@ db.exec(`
     name TEXT NOT NULL,
     logo TEXT,
     status TEXT DEFAULT 'active',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
   CREATE TABLE IF NOT EXISTS farm_inventory (
@@ -76,9 +66,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS member_projects (
     member_id INTEGER NOT NULL,
     project_id INTEGER NOT NULL,
-    PRIMARY KEY (member_id, project_id),
-    FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
-    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    PRIMARY KEY (member_id, project_id)
   );
 
   CREATE TABLE IF NOT EXISTS member_farms (
@@ -96,8 +84,7 @@ db.exec(`
     amount REAL NOT NULL,
     description TEXT,
     date DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
-    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
+    FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
   );
 
   CREATE TABLE IF NOT EXISTS role_definitions (
@@ -120,20 +107,145 @@ db.exec(`
     date DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
+  CREATE TABLE IF NOT EXISTS farm_debts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    farm_id INTEGER NOT NULL,
+    proveedor_name TEXT NOT NULL,
+    total_amount REAL NOT NULL,
+    remaining REAL NOT NULL,
+    source_tx_id INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (farm_id) REFERENCES farms(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS bank_clients (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    phone TEXT,
+    profile_link TEXT,
+    status TEXT DEFAULT 'active',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS bank_loans (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    client_id INTEGER NOT NULL,
+    amount REAL NOT NULL,
+    interest_pct REAL NOT NULL,
+    total_to_pay REAL NOT NULL,
+    deadline TEXT NOT NULL,
+    status TEXT DEFAULT 'active',
+    description TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (client_id) REFERENCES bank_clients(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS bank_payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    loan_id INTEGER NOT NULL,
+    amount REAL NOT NULL,
+    description TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (loan_id) REFERENCES bank_loans(id) ON DELETE CASCADE
+  );
+
   INSERT OR IGNORE INTO role_definitions (name, slug, color, is_special) VALUES
     ('Socio', 'socio', '#60a5fa', 1),
     ('Inversionista', 'inversionista', '#22c55e', 1),
-    ('Propietario', 'propietario', '#a78bfa', 1);
+    ('Proveedor', 'proveedor', '#a78bfa', 1);
 `);
 
+const ownerSlugMigration = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='role_definitions'").get();
+if (ownerSlugMigration) {
+  db.prepare("UPDATE member_roles SET role = 'proveedor' WHERE role = 'propietario'").run();
+  db.prepare("DELETE FROM role_definitions WHERE slug = 'propietario'").run();
+}
+
+const projectsTableInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='projects'").get();
+if (projectsTableInfo) {
+  db.exec(`DROP TABLE IF EXISTS projects`);
+}
+
+const txInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='transactions'").get();
+if (txInfo && txInfo.sql.includes('REFERENCES projects')) {
+  db.exec(`
+    CREATE TABLE transactions_new (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL,
+      type TEXT NOT NULL CHECK(type IN ('investment', 'earning', 'expense')),
+      amount REAL NOT NULL,
+      description TEXT,
+      date DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    INSERT INTO transactions_new (id, project_id, type, amount, description, date)
+      SELECT id, project_id, type, amount, description, date FROM transactions;
+    DROP TABLE transactions;
+    ALTER TABLE transactions_new RENAME TO transactions;
+  `);
+}
+
+const farmsInfo2 = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='farms'").get();
+if (farmsInfo2 && farmsInfo2.sql.includes('REFERENCES projects')) {
+  db.exec(`
+    CREATE TABLE farms_new (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      logo TEXT,
+      status TEXT DEFAULT 'active',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    INSERT INTO farms_new (id, project_id, name, logo, status, created_at)
+      SELECT id, project_id, name, logo, status, created_at FROM farms;
+    DROP TABLE farms;
+    ALTER TABLE farms_new RENAME TO farms;
+  `);
+}
+
+const memberProjectsInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='member_projects'").get();
+if (memberProjectsInfo && memberProjectsInfo.sql.includes('REFERENCES projects')) {
+  db.exec(`
+    CREATE TABLE member_projects_new (
+      member_id INTEGER NOT NULL,
+      project_id INTEGER NOT NULL,
+      PRIMARY KEY (member_id, project_id)
+    );
+    INSERT INTO member_projects_new (member_id, project_id)
+      SELECT member_id, project_id FROM member_projects;
+    DROP TABLE member_projects;
+    ALTER TABLE member_projects_new RENAME TO member_projects;
+  `);
+}
+
+const investmentsInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='investments'").get();
+if (investmentsInfo && investmentsInfo.sql.includes('REFERENCES projects')) {
+  db.exec(`
+    CREATE TABLE investments_new (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      member_id INTEGER NOT NULL,
+      project_id INTEGER,
+      amount REAL NOT NULL,
+      description TEXT,
+      date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
+    );
+    INSERT INTO investments_new (id, member_id, project_id, amount, description, date)
+      SELECT id, member_id, project_id, amount, description, date FROM investments;
+    DROP TABLE investments;
+    ALTER TABLE investments_new RENAME TO investments;
+  `);
+}
+
 const memberRolesInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='member_roles'").get();
-if (memberRolesInfo && memberRolesInfo.sql.includes("CHECK")) {
+if (memberRolesInfo && !memberRolesInfo.sql.includes("UNIQUE(member_id, role)")) {
+  db.exec(`DELETE FROM member_roles WHERE id NOT IN (SELECT MIN(id) FROM member_roles GROUP BY member_id, role)`);
   db.exec(`
     CREATE TABLE member_roles_new (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       member_id INTEGER NOT NULL,
       role TEXT NOT NULL,
-      FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
+      FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
+      UNIQUE(member_id, role)
     );
     INSERT INTO member_roles_new (id, member_id, role) SELECT id, member_id, role FROM member_roles;
     DROP TABLE member_roles;
@@ -258,6 +370,28 @@ if (!farmProductsInfo) {
     if (existing.c === 0) {
       db.prepare('INSERT INTO farm_products (farm_id, name, icon, price) VALUES (?, ?, ?, ?)').run(farm.id, 'Producto', '', 0);
     }
+  }
+}
+
+const DEFAULT_PRODUCTS = [
+  { name: 'Leche', icon: '', price: 0 },
+  { name: 'Carne de vaca', icon: '', price: 0 },
+  { name: 'Carne de cerdo', icon: '', price: 0 },
+  { name: 'Muslos de pollo', icon: '', price: 0 },
+  { name: 'Huevos', icon: '', price: 0 },
+];
+
+const farmsWithoutProducts = db.prepare(`
+  SELECT f.id FROM farms f
+  WHERE NOT EXISTS (SELECT 1 FROM farm_products WHERE farm_id = f.id)
+`).all();
+
+for (const farm of farmsWithoutProducts) {
+  const insertProduct = db.prepare('INSERT INTO farm_products (farm_id, name, icon, price) VALUES (?, ?, ?, ?)');
+  const insertInventory = db.prepare('INSERT INTO farm_inventory (farm_id, product_id, quantity) VALUES (?, ?, 0)');
+  for (const p of DEFAULT_PRODUCTS) {
+    const result = insertProduct.run(farm.id, p.name, p.icon, p.price);
+    insertInventory.run(farm.id, result.lastInsertRowid);
   }
 }
 
