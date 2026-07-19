@@ -4,6 +4,7 @@ const path = require('path');
 const routes = require('./routes');
 const farmRoutes = require('./farmRoutes');
 const memberRoutes = require('./memberRoutes');
+const bankRoutes = require('./bankRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -20,6 +21,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api', routes);
 app.use('/api', farmRoutes);
 app.use('/api', memberRoutes);
+app.use('/api', bankRoutes);
 
 if (!isDev) {
   app.use(express.static(distPath));
