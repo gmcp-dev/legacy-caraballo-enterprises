@@ -7,6 +7,8 @@ import FarmDetail from './pages/FarmDetail';
 import Members from './pages/Members';
 import MemberDetail from './pages/MemberDetail';
 import Finance from './pages/Finance';
+import BancoPage from './pages/BancoPage';
+import ClientDetail from './pages/ClientDetail';
 import './styles/index.css';
 
 function App() {
@@ -25,6 +27,8 @@ function App() {
               <Route path="/members" element={<Members />} />
               <Route path="/members/:slug" element={<MemberDetail />} />
               <Route path="/finance" element={<Finance />} />
+              <Route path="/projects/banco-maze" element={<BancoPage />} />
+              <Route path="/projects/banco-maze/clients/:clientId" element={<ClientDetail />} />
             </Routes>
           </div>
         </div>
