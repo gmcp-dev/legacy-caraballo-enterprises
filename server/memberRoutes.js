@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('./db');
 const { slugify, matchSlug } = require('./slugify');
+const { getProjectById } = require('./projects');
 
 function getMemberById(id) {
   const member = db.prepare('SELECT * FROM members WHERE id = ?').get(id);
@@ -15,10 +16,12 @@ function getMemberById(id) {
   `).all(id);
 
   member.projects = db.prepare(`
-    SELECT p.id, p.name, p.status FROM projects p
-    JOIN member_projects mp ON p.id = mp.project_id
+    SELECT mp.project_id FROM member_projects mp
     WHERE mp.member_id = ?
-  `).all(id);
+  `).all(id).map(r => {
+    const p = getProjectById(r.project_id);
+    return p ? { id: p.id, name: p.name, status: p.status } : null;
+  }).filter(Boolean);
 
   member.farms = db.prepare(`
     SELECT f.id, f.name, f.status FROM farms f
@@ -109,7 +112,10 @@ router.get('/members', (req, res) => {
       JOIN role_definitions rd ON r.role = rd.slug
       WHERE r.member_id = ?
     `).all(m.id);
-    m.projects = db.prepare('SELECT p.id, p.name FROM projects p JOIN member_projects mp ON p.id = mp.project_id WHERE mp.member_id = ?').all(m.id);
+    m.projects = db.prepare('SELECT project_id FROM member_projects WHERE member_id = ?').all(m.id).map(r => {
+      const p = getProjectById(r.project_id);
+      return p ? { id: p.id, name: p.name } : null;
+    }).filter(Boolean);
     m.farms = db.prepare('SELECT f.id, f.name FROM farms f JOIN member_farms mf ON f.id = mf.farm_id WHERE mf.member_id = ?').all(m.id);
     m.total_invested = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM investments WHERE member_id = ?').get(m.id).total;
   });
