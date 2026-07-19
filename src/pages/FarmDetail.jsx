@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import './FarmDetail.css';
 
 const API = 'http://localhost:3001/api';
@@ -13,22 +13,21 @@ const PERIODS = [
 ];
 
 const txTypeLabel = { entrada: 'Entrada', salida: 'Salida' };
-const txTypeColor = { entrada: '#22c55e', salida: '#f87171' };
+const txTypeColor = { entrada: '#f59e0b', salida: '#22c55e' };
 
 export default function FarmDetail() {
   const { farmSlug } = useParams();
+  const navigate = useNavigate();
   const [farm, setFarm] = useState(null);
-  const [products, setProducts] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
   const [showTxModal, setShowTxModal] = useState(false);
   const [txForm, setTxForm] = useState({ type: 'entrada', product_id: '', quantity: '', price: '', description: '' });
   const [period, setPeriod] = useState('all');
   const [editingField, setEditingField] = useState(null);
   const [editForm, setEditForm] = useState({});
-  const [showProductModal, setShowProductModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [productForm, setProductForm] = useState({ name: '', image: '', price: '' });
   const [members, setMembers] = useState([]);
+  const [showDangerZone, setShowDangerZone] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
 
   const fetchFarm = useCallback(async () => {
     const res = await fetch(`${API}/projects/${PROJECT_SLUG}/farms/${farmSlug}?period=${period}`);
@@ -36,16 +35,11 @@ export default function FarmDetail() {
     setFarm(data);
   }, [farmSlug, period]);
 
-  const fetchProducts = useCallback(async () => {
-    const res = await fetch(`${API}/projects/${PROJECT_SLUG}/farms/${farmSlug}/products`);
-    const data = await res.json();
-    setProducts(Array.isArray(data) ? data : []);
-  }, [farmSlug]);
+  const products = farm?.inventory || [];
 
   useEffect(() => {
     fetchFarm();
-    fetchProducts();
-  }, [fetchFarm, fetchProducts]);
+  }, [fetchFarm]);
 
   useEffect(() => {
     fetch(`${API}/members`).then(r => r.json()).then(d => {
@@ -70,56 +64,12 @@ export default function FarmDetail() {
     setTxForm({ type: 'entrada', product_id: '', quantity: '', price: '', description: '' });
     setShowTxModal(false);
     fetchFarm();
-    fetchProducts();
   };
 
   const deleteTransaction = async (txId) => {
     if (!confirm('Eliminar transaccion?')) return;
     await fetch(`${API}/projects/${PROJECT_SLUG}/farms/${farmSlug}/transactions/${txId}`, { method: 'DELETE' });
     fetchFarm();
-    fetchProducts();
-  };
-
-  const saveProduct = async (e) => {
-    e.preventDefault();
-    if (!productForm.name.trim()) return;
-    if (editingProduct) {
-      await fetch(`${API}/projects/${PROJECT_SLUG}/farms/${farmSlug}/products/${editingProduct.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: productForm.name, icon: productForm.image, price: parseFloat(productForm.price) || 0 }),
-      });
-    } else {
-      await fetch(`${API}/projects/${PROJECT_SLUG}/farms/${farmSlug}/products`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: productForm.name, icon: productForm.image, price: parseFloat(productForm.price) || 0 }),
-      });
-    }
-    setShowProductModal(false);
-    setEditingProduct(null);
-    setProductForm({ name: '', image: '', price: '' });
-    fetchProducts();
-    fetchFarm();
-  };
-
-  const deleteProduct = async (productId) => {
-    if (!confirm('Eliminar producto? Se perdera su inventario.')) return;
-    await fetch(`${API}/projects/${PROJECT_SLUG}/farms/${farmSlug}/products/${productId}`, { method: 'DELETE' });
-    fetchProducts();
-    fetchFarm();
-  };
-
-  const openEditProduct = (p) => {
-    setEditingProduct(p);
-    setProductForm({ name: p.name, image: p.icon || '', price: p.price || '' });
-    setShowProductModal(true);
-  };
-
-  const openNewProduct = () => {
-    setEditingProduct(null);
-    setProductForm({ name: '', image: '', price: '' });
-    setShowProductModal(true);
   };
 
   const startEdit = (field, value) => {
@@ -128,13 +78,18 @@ export default function FarmDetail() {
   };
 
   const saveEdit = async () => {
-    await fetch(`${API}/projects/${PROJECT_SLUG}/farms/${farmSlug}`, {
+    const res = await fetch(`${API}/projects/${PROJECT_SLUG}/farms/${farmSlug}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(editForm),
     });
+    const updated = await res.json();
     setEditingField(null);
-    fetchFarm();
+    if (editForm.name && updated.slug && updated.slug !== farmSlug) {
+      navigate(`/projects/granjas-eden/${updated.slug}`, { replace: true });
+    } else {
+      fetchFarm();
+    }
   };
 
   const cancelEdit = () => {
@@ -154,6 +109,11 @@ export default function FarmDetail() {
       body: JSON.stringify({ name: farm.name, owner: farm.owner, status: newStatus }),
     });
     fetchFarm();
+  };
+
+  const deleteFarm = async () => {
+    await fetch(`${API}/projects/${PROJECT_SLUG}/farms/${farmSlug}`, { method: 'DELETE' });
+    navigate('/projects/granjas-eden');
   };
 
   if (!farm) return null;
@@ -245,11 +205,11 @@ export default function FarmDetail() {
           <div className="grid grid-4" style={{ marginBottom: '32px' }}>
             <div className="stat-card">
               <div className="card-label">Entradas</div>
-              <div className="stat-value" style={{ color: '#22c55e' }}>{formatMoney(farm.entradas)}</div>
+              <div className="stat-value" style={{ color: '#f59e0b' }}>{formatMoney(farm.entradas)}</div>
             </div>
             <div className="stat-card">
               <div className="card-label">Salidas</div>
-              <div className="stat-value" style={{ color: '#f87171' }}>{formatMoney(farm.salidas)}</div>
+              <div className="stat-value" style={{ color: '#22c55e' }}>{formatMoney(farm.salidas)}</div>
             </div>
             <div className="stat-card">
               <div className="card-label">Balance</div>
@@ -258,10 +218,24 @@ export default function FarmDetail() {
               </div>
             </div>
             <div className="stat-card">
-              <div className="card-label">Valor Inventario</div>
-              <div className="stat-value" style={{ color: 'var(--gold-primary)' }}>{formatMoney(inventoryValue)}</div>
+              <div className="card-label">{farm.total_debt > 0 ? 'Deuda a Proveedor' : 'Valor Inventario'}</div>
+              <div className="stat-value" style={{ color: farm.total_debt > 0 ? '#f87171' : 'var(--gold-primary)' }}>
+                {farm.total_debt > 0 ? formatMoney(farm.total_debt) : formatMoney(inventoryValue)}
+              </div>
             </div>
           </div>
+
+          {farm.total_debt > 0 && (
+            <div style={{ background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.15)', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px' }}>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: '#f87171', marginBottom: '8px' }}>Deuda pendiente con {farm.owner}</div>
+              {farm.debts && farm.debts.map(d => (
+                <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: 'var(--text-secondary)', padding: '4px 0' }}>
+                  <span>{new Date(d.created_at).toLocaleDateString('es-VE')} — Total: {formatMoney(d.total_amount)}</span>
+                  <span style={{ color: d.remaining > 0 ? '#f87171' : '#22c55e', fontWeight: 600 }}>Pendiente: {formatMoney(d.remaining)}</span>
+                </div>
+              ))}
+            </div>
+          )}
 
           <h3 className="detail-section-title" style={{ marginBottom: '16px' }}>Productos</h3>
           {products.length === 0 ? (
@@ -288,12 +262,11 @@ export default function FarmDetail() {
         <div>
           <div className="detail-section-header">
             <h3 className="detail-section-title">Productos</h3>
-            <button className="btn btn-gold" onClick={openNewProduct}>+ Nuevo Producto</button>
           </div>
           {products.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-title">Sin productos</div>
-              <div className="empty-state-text">Agrega productos para comenzar a gestionar el inventario</div>
+              <div className="empty-state-text">No hay productos configurados para esta granja</div>
             </div>
           ) : (
             <div className="table-container">
@@ -305,7 +278,6 @@ export default function FarmDetail() {
                     <th style={{ textAlign: 'center' }}>Cantidad</th>
                     <th style={{ textAlign: 'center' }}>Precio Base</th>
                     <th style={{ textAlign: 'center' }}>Valor Total</th>
-                    <th style={{ textAlign: 'center' }}>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -316,12 +288,6 @@ export default function FarmDetail() {
                       <td style={{ textAlign: 'center', color: '#60a5fa', fontWeight: 600 }}>{p.quantity || 0}</td>
                       <td style={{ textAlign: 'center' }}>{formatMoney(p.price)}</td>
                       <td style={{ textAlign: 'center', fontWeight: 600 }}>{formatMoney((p.quantity || 0) * (p.price || 0))}</td>
-                      <td style={{ textAlign: 'center' }}>
-                        <span style={{ display: 'inline-flex', gap: '4px' }}>
-                          <button className="btn btn-outline" style={{ padding: '4px 10px', fontSize: '12px' }} onClick={() => openEditProduct(p)}>Editar</button>
-                          <button className="project-delete-btn" onClick={() => deleteProduct(p.id)}>×</button>
-                        </span>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -395,8 +361,8 @@ export default function FarmDetail() {
                 <label className="form-label">Tipo</label>
                 <div className="form-radio-group">
                   {[
-                    { value: 'entrada', label: 'Entrada', color: '#22c55e' },
-                    { value: 'salida', label: 'Salida', color: '#f87171' },
+                    { value: 'entrada', label: 'Entrada', color: '#f59e0b' },
+                    { value: 'salida', label: 'Salida', color: '#22c55e' },
                   ].map((opt) => (
                     <label key={opt.value} className={`form-radio ${txForm.type === opt.value ? 'active' : ''}`} style={{ '--radio-color': opt.color }}>
                       <input type="radio" name="type" value={opt.value} checked={txForm.type === opt.value} onChange={(e) => setTxForm({ ...txForm, type: e.target.value })} />
@@ -448,42 +414,41 @@ export default function FarmDetail() {
         </div>
       )}
 
-      {showProductModal && (
-        <div className="modal-overlay" onClick={() => { setShowProductModal(false); setEditingProduct(null); }}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2 className="modal-title">{editingProduct ? 'Editar Producto' : 'Nuevo Producto'}</h2>
-              <button className="modal-close" onClick={() => { setShowProductModal(false); setEditingProduct(null); }}>×</button>
+      <div style={{ marginTop: '48px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '24px' }}>
+        {!showDangerZone ? (
+          <button className="btn btn-outline" style={{ fontSize: '12px', color: 'var(--text-muted)', borderColor: 'rgba(255,255,255,0.08)' }} onClick={() => setShowDangerZone(true)}>
+            Zona de peligro
+          </button>
+        ) : (
+          <div style={{ border: '1px solid rgba(248,113,113,0.2)', borderRadius: '12px', padding: '20px', background: 'rgba(248,113,113,0.04)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <h3 style={{ margin: 0, color: '#f87171', fontSize: '16px', fontWeight: 600 }}>Eliminar granja</h3>
+              <button className="btn btn-outline" style={{ fontSize: '12px', padding: '4px 10px' }} onClick={() => { setShowDangerZone(false); setDeleteConfirmName(''); }}>Cancelar</button>
             </div>
-            <form onSubmit={saveProduct}>
-              <div className="form-group">
-                <label className="form-label">Nombre</label>
-                <input type="text" className="form-input" placeholder="Ej: Leche" value={productForm.name} onChange={(e) => setProductForm({ ...productForm, name: e.target.value })} autoFocus />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div className="form-group">
-                  <label className="form-label">Imagen (URL)</label>
-                  <input type="url" className="form-input" placeholder="https://..." value={productForm.image} onChange={(e) => setProductForm({ ...productForm, image: e.target.value })} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Precio Base ($)</label>
-                  <input type="number" className="form-input" placeholder="0.00" min="0" step="0.01" value={productForm.price} onChange={(e) => setProductForm({ ...productForm, price: e.target.value })} />
-                </div>
-              </div>
-              {productForm.image && (
-                <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <img src={productForm.image} alt="Preview" style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }} onError={(e) => e.target.style.display = 'none'} />
-                  <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Vista previa</span>
-                </div>
-              )}
-              <div className="modal-actions">
-                <button type="button" className="btn btn-outline" onClick={() => { setShowProductModal(false); setEditingProduct(null); }}>Cancelar</button>
-                <button type="submit" className="btn btn-gold">{editingProduct ? 'Guardar' : 'Crear'}</button>
-              </div>
-            </form>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '12px' }}>
+              Escribe <strong style={{ color: '#f87171' }}>{farm.name}</strong> para confirmar:
+            </p>
+            <input
+              className="form-input"
+              placeholder={farm.name}
+              value={deleteConfirmName}
+              onChange={(e) => setDeleteConfirmName(e.target.value)}
+              style={{ maxWidth: '300px', marginBottom: '12px' }}
+            />
+            <div>
+              <button
+                className="btn"
+                style={{ background: deleteConfirmName === farm.name ? '#f87171' : 'rgba(248,113,113,0.2)', color: '#fff', border: 'none', padding: '6px 16px', fontSize: '13px', cursor: deleteConfirmName === farm.name ? 'pointer' : 'not-allowed', opacity: deleteConfirmName === farm.name ? 1 : 0.4 }}
+                disabled={deleteConfirmName !== farm.name}
+                onClick={deleteFarm}
+              >
+                Eliminar permanentemente
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+
     </div>
   );
 }

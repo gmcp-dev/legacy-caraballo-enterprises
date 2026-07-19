@@ -1,0 +1,57 @@
+.client-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.client-info-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.client-info-row a {
+  color: var(--gold-primary);
+  text-decoration: none;
+}
+
+.client-info-row a:hover {
+  text-decoration: underline;
+}
+
+.client-stats-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.client-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.client-edit-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.client-edit-row .form-group:last-child {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.payment-date {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.payment-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
