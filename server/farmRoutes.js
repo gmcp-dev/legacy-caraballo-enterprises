@@ -2,11 +2,15 @@ const express = require('express');
 const router = express.Router();
 const db = require('./db');
 const { slugify, matchSlug } = require('./slugify');
+const { getProjectBySlug } = require('./projects');
 
-function getProjectBySlug(slug) {
-  const projects = db.prepare('SELECT * FROM projects').all();
-  return projects.find(p => matchSlug(p.name, slug));
-}
+const DEFAULT_PRODUCTS = [
+  { name: 'Leche', icon: '', price: 0 },
+  { name: 'Carne de vaca', icon: '', price: 0 },
+  { name: 'Carne de cerdo', icon: '', price: 0 },
+  { name: 'Muslos de pollo', icon: '', price: 0 },
+  { name: 'Huevos', icon: '', price: 0 },
+];
 
 function resolveFarm(projectId, farmSlug) {
   const farms = db.prepare('SELECT * FROM farms WHERE project_id = ?').all(projectId);
@@ -69,6 +73,7 @@ router.get('/projects/:slug/farms', (req, res) => {
     f.inventory = getFarmInventory(f.id);
     const stats = getFarmStats(f.id, period);
     Object.assign(f, stats);
+    f.total_debt = db.prepare('SELECT COALESCE(SUM(remaining), 0) as total FROM farm_debts WHERE farm_id = ?').get(f.id).total;
   });
 
   res.json(farms);
@@ -86,10 +91,19 @@ router.get('/projects/:slug/farms/:farmSlug', (req, res) => {
 
   const period = req.query.period;
   const dateFilter = getDateFilter(period);
-  farm.transactions = db.prepare(`SELECT * FROM farm_transactions WHERE farm_id = ? ${dateFilter} ORDER BY date DESC`).all(farm.id);
+  farm.transactions = db.prepare(`
+    SELECT t.*, fp.name as product_name, fp.icon as product_icon
+    FROM farm_transactions t
+    LEFT JOIN farm_products fp ON t.product_id = fp.id
+    WHERE t.farm_id = ? ${dateFilter}
+    ORDER BY t.date DESC
+  `).all(farm.id);
 
   const stats = getFarmStats(farm.id, period);
   Object.assign(farm, stats);
+
+  farm.debts = db.prepare('SELECT * FROM farm_debts WHERE farm_id = ? AND remaining > 0 ORDER BY created_at ASC').all(farm.id);
+  farm.total_debt = farm.debts.reduce((sum, d) => sum + d.remaining, 0);
 
   res.json(farm);
 });
@@ -105,9 +119,24 @@ router.post('/projects/:slug/farms', (req, res) => {
     .run(project.id, name, owner || '');
 
   const farmId = result.lastInsertRowid;
+
+  const insertProduct = db.prepare('INSERT INTO farm_products (farm_id, name, icon, price) VALUES (?, ?, ?, ?)');
+  const insertInventory = db.prepare('INSERT INTO farm_inventory (farm_id, product_id, quantity) VALUES (?, ?, 0)');
+  for (const p of DEFAULT_PRODUCTS) {
+    const prodResult = insertProduct.run(farmId, p.name, p.icon, p.price);
+    insertInventory.run(farmId, prodResult.lastInsertRowid);
+  }
+
+  if (owner) {
+    const ownerMember = db.prepare('SELECT id FROM members WHERE name = ?').get(owner);
+    if (ownerMember) {
+      db.prepare('INSERT OR IGNORE INTO member_roles (member_id, role) VALUES (?, ?)').run(ownerMember.id, 'proveedor');
+    }
+  }
+
   const farm = db.prepare('SELECT * FROM farms WHERE id = ?').get(farmId);
   farm.slug = slugify(farm.name);
-  farm.inventory = [];
+  farm.inventory = getFarmInventory(farmId);
   res.status(201).json(farm);
 });
 
@@ -125,7 +154,7 @@ router.put('/projects/:slug/farms/:farmSlug', (req, res) => {
 
   const oldOwnerName = farm.owner || '';
   if (newOwner !== oldOwnerName) {
-    const propSlug = 'propietario';
+    const propSlug = 'proveedor';
     const insertRole = db.prepare('INSERT OR IGNORE INTO member_roles (member_id, role) VALUES (?, ?)');
 
     if (newOwner) {
@@ -157,6 +186,16 @@ router.delete('/projects/:slug/farms/:farmSlug', (req, res) => {
   const farm = resolveFarm(project.id, req.params.farmSlug);
   if (!farm) return res.status(404).json({ error: 'Granja no encontrada' });
 
+  if (farm.owner) {
+    const ownerMember = db.prepare('SELECT id FROM members WHERE name = ?').get(farm.owner);
+    if (ownerMember) {
+      const ownsOther = db.prepare('SELECT COUNT(*) as c FROM farms WHERE owner = ? AND id != ?').get(farm.owner, farm.id);
+      if (ownsOther.c === 0) {
+        db.prepare('DELETE FROM member_roles WHERE member_id = ? AND role = ?').run(ownerMember.id, 'proveedor');
+      }
+    }
+  }
+
   db.prepare('DELETE FROM farms WHERE id = ?').run(farm.id);
   res.json({ success: true });
 });
@@ -170,68 +209,8 @@ router.get('/projects/:slug/farms/:farmSlug/products', (req, res) => {
   const farm = resolveFarm(project.id, req.params.farmSlug);
   if (!farm) return res.status(404).json({ error: 'Granja no encontrada' });
 
-  const products = db.prepare('SELECT * FROM farm_products WHERE farm_id = ? ORDER BY created_at ASC').all(farm.id);
-  for (const p of products) {
-    const inv = db.prepare('SELECT quantity FROM farm_inventory WHERE farm_id = ? AND product_id = ?').get(farm.id, p.id);
-    p.quantity = inv ? inv.quantity : 0;
-  }
+  const products = getFarmInventory(farm.id);
   res.json(products);
-});
-
-router.post('/projects/:slug/farms/:farmSlug/products', (req, res) => {
-  const project = getProjectBySlug(req.params.slug);
-  if (!project) return res.status(404).json({ error: 'Proyecto no encontrado' });
-
-  const farm = resolveFarm(project.id, req.params.farmSlug);
-  if (!farm) return res.status(404).json({ error: 'Granja no encontrada' });
-
-  const { name, icon, price } = req.body;
-  if (!name || !name.trim()) return res.status(400).json({ error: 'El nombre es requerido' });
-
-  const result = db.prepare('INSERT INTO farm_products (farm_id, name, icon, price) VALUES (?, ?, ?, ?)')
-    .run(farm.id, name.trim(), icon || '', parseFloat(price) || 0);
-
-  const productId = result.lastInsertRowid;
-
-  db.prepare('INSERT INTO farm_inventory (farm_id, product_id, quantity) VALUES (?, ?, 0)').run(farm.id, productId);
-
-  const product = db.prepare('SELECT * FROM farm_products WHERE id = ?').get(productId);
-  product.quantity = 0;
-  res.status(201).json(product);
-});
-
-router.put('/projects/:slug/farms/:farmSlug/products/:productId', (req, res) => {
-  const project = getProjectBySlug(req.params.slug);
-  if (!project) return res.status(404).json({ error: 'Proyecto no encontrado' });
-
-  const farm = resolveFarm(project.id, req.params.farmSlug);
-  if (!farm) return res.status(404).json({ error: 'Granja no encontrada' });
-
-  const product = db.prepare('SELECT * FROM farm_products WHERE id = ? AND farm_id = ?').get(req.params.productId, farm.id);
-  if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
-
-  const { name, icon, price } = req.body;
-  db.prepare('UPDATE farm_products SET name = ?, icon = ?, price = ? WHERE id = ?')
-    .run(name !== undefined ? name : product.name, icon !== undefined ? icon : product.icon, price !== undefined ? parseFloat(price) : product.price, product.id);
-
-  const updated = db.prepare('SELECT * FROM farm_products WHERE id = ?').get(product.id);
-  const inv = db.prepare('SELECT quantity FROM farm_inventory WHERE farm_id = ? AND product_id = ?').get(farm.id, product.id);
-  updated.quantity = inv ? inv.quantity : 0;
-  res.json(updated);
-});
-
-router.delete('/projects/:slug/farms/:farmSlug/products/:productId', (req, res) => {
-  const project = getProjectBySlug(req.params.slug);
-  if (!project) return res.status(404).json({ error: 'Proyecto no encontrado' });
-
-  const farm = resolveFarm(project.id, req.params.farmSlug);
-  if (!farm) return res.status(404).json({ error: 'Granja no encontrada' });
-
-  const product = db.prepare('SELECT * FROM farm_products WHERE id = ? AND farm_id = ?').get(req.params.productId, farm.id);
-  if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
-
-  db.prepare('DELETE FROM farm_products WHERE id = ?').run(product.id);
-  res.json({ success: true });
 });
 
 // ==================== FARM TRANSACTIONS ====================
@@ -300,11 +279,33 @@ router.post('/projects/:slug/farms/:farmSlug/transactions', (req, res) => {
 
   const treasuryType = type === 'salida' ? 'expense' : 'income';
   db.prepare('INSERT INTO treasury_transactions (type, amount, description, source, source_id, source_name) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(treasuryType, amount, description || `Farm: ${farm.name}`, 'farm', farm.id, farm.name);
+    .run(treasuryType, amount, description || `${farm.name}: ${type === 'entrada' ? 'Entrada' : 'Salida'}`, 'farm', farm.id, farm.name);
 
-  const projectTreasuryType = type === 'entrada' ? 'expense' : 'income';
-  db.prepare('INSERT INTO treasury_transactions (type, amount, description, source, source_id, source_name) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(projectTreasuryType, amount, description || `${farm.name}: ${type === 'entrada' ? 'Compra' : 'Venta'}`, 'project', project.id, project.name);
+  if (type === 'entrada' && farm.owner && amount > 0) {
+    db.prepare('INSERT INTO farm_debts (farm_id, proveedor_name, total_amount, remaining, source_tx_id) VALUES (?, ?, ?, ?, ?)')
+      .run(farm.id, farm.owner, amount, amount, result.lastInsertRowid);
+  }
+
+  if (type === 'salida' && amount > 0) {
+    db.prepare('INSERT INTO treasury_transactions (type, amount, description, source, source_id, source_name) VALUES (?, ?, ?, ?, ?, ?)')
+      .run('income', amount, description || `${farm.name}: Venta`, 'project', project.id, project.name);
+
+    const totalDebt = db.prepare('SELECT COALESCE(SUM(remaining), 0) as total FROM farm_debts WHERE farm_id = ?').get(farm.id).total;
+    if (totalDebt > 0) {
+      const payment = Math.min(amount, totalDebt);
+      db.prepare('INSERT INTO treasury_transactions (type, amount, description, source, source_id, source_name) VALUES (?, ?, ?, ?, ?, ?)')
+        .run('expense', payment, `Pago a ${farm.owner}: ${farm.name}`, 'project', project.id, project.name);
+
+      let remaining = payment;
+      const debts = db.prepare('SELECT * FROM farm_debts WHERE farm_id = ? AND remaining > 0 ORDER BY created_at ASC').all(farm.id);
+      for (const debt of debts) {
+        if (remaining <= 0) break;
+        const paid = Math.min(remaining, debt.remaining);
+        db.prepare('UPDATE farm_debts SET remaining = remaining - ? WHERE id = ?').run(paid, debt.id);
+        remaining -= paid;
+      }
+    }
+  }
 
   res.status(201).json(tx);
 });
@@ -328,10 +329,20 @@ router.delete('/projects/:slug/farms/:farmSlug/transactions/:txId', (req, res) =
   }
 
   db.prepare('DELETE FROM farm_transactions WHERE id = ?').run(tx.id);
-  db.prepare('DELETE FROM treasury_transactions WHERE source = ? AND source_id = ? AND amount = ? AND description = ? AND date = ?')
-    .run('farm', farm.id, tx.amount, tx.description || '', tx.date);
+
   db.prepare('DELETE FROM treasury_transactions WHERE source = ? AND source_id = ? AND amount = ? AND date = ?')
-    .run('project', project.id, tx.amount, tx.date);
+    .run('farm', farm.id, tx.amount, tx.date);
+
+  if (tx.type === 'entrada') {
+    db.prepare('DELETE FROM farm_debts WHERE source_tx_id = ?').run(tx.id);
+  }
+
+  if (tx.type === 'salida') {
+    db.prepare("DELETE FROM treasury_transactions WHERE source = ? AND source_id = ? AND type = 'income' AND amount = ? AND date = ?")
+      .run('project', project.id, tx.amount, tx.date);
+    db.prepare("DELETE FROM treasury_transactions WHERE source = ? AND source_id = ? AND type = 'expense' AND description LIKE ? AND date = ?")
+      .run('project', project.id, `Pago a %: ${farm.name}`, tx.date);
+  }
 
   res.json({ success: true });
 });
