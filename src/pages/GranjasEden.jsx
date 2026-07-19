@@ -29,8 +29,6 @@ export default function GranjasEden() {
   const [form, setForm] = useState({ name: '' });
   const [period, setPeriod] = useState('week');
   const [activeTab, setActiveTab] = useState('overview');
-  const [editingField, setEditingField] = useState(null);
-  const [editForm, setEditForm] = useState({});
   const [showAddMember, setShowAddMember] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [showTxModal, setShowTxModal] = useState(false);
@@ -62,26 +60,6 @@ export default function GranjasEden() {
   useEffect(() => {
     fetchFarms();
   }, [fetchFarms]);
-
-  const startEdit = (field, value) => {
-    setEditingField(field);
-    setEditForm({ [field]: value || '' });
-  };
-
-  const saveEdit = async () => {
-    await fetch(`${API}/projects/${SLUG}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(editForm),
-    });
-    setEditingField(null);
-    fetchAll();
-  };
-
-  const cancelEdit = () => {
-    setEditingField(null);
-    setEditForm({});
-  };
 
   const addMember = async () => {
     if (!selectedMemberId) return;
@@ -136,14 +114,19 @@ export default function GranjasEden() {
   const createFarm = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) return;
-    await fetch(`${API}/projects/${SLUG}/farms`, {
+    const res = await fetch(`${API}/projects/${SLUG}/farms`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
     });
+    const data = await res.json();
     setForm({ name: '' });
     setShowModal(false);
-    fetchFarms();
+    if (data.slug) {
+      window.location.href = `/projects/${SLUG}/${data.slug}`;
+    } else {
+      fetchFarms();
+    }
   };
 
   const formatMoney = (amount) => {
@@ -162,40 +145,8 @@ export default function GranjasEden() {
 
       <div className="ge-header">
         <div>
-          {editingField === 'name' ? (
-            <div className="fd-edit-inline">
-              <input
-                className="form-input"
-                value={editForm.name || ''}
-                onChange={(e) => setEditForm({ name: e.target.value })}
-                autoFocus
-                onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') cancelEdit(); }}
-              />
-              <button className="btn btn-gold" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={saveEdit}>✓</button>
-              <button className="btn btn-outline" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={cancelEdit}>×</button>
-            </div>
-          ) : (
-            <h1 className="page-title" onClick={() => startEdit('name', project.name)} style={{ cursor: 'pointer' }}>
-              {project.name} ✎
-            </h1>
-          )}
-          {editingField === 'description' ? (
-            <div className="fd-edit-inline">
-              <input
-                className="form-input"
-                value={editForm.description || ''}
-                onChange={(e) => setEditForm({ description: e.target.value })}
-                autoFocus
-                onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') cancelEdit(); }}
-              />
-              <button className="btn btn-gold" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={saveEdit}>✓</button>
-              <button className="btn btn-outline" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={cancelEdit}>×</button>
-            </div>
-          ) : (
-            <p className="page-subtitle" onClick={() => startEdit('description', project.description)} style={{ cursor: 'pointer' }}>
-              {project.description || 'Sin descripcion'} ✎
-            </p>
-          )}
+          <h1 className="page-title">{project.name}</h1>
+          <p className="page-subtitle">{project.description || 'Sin descripcion'}</p>
         </div>
         <button className="btn btn-gold" onClick={() => setShowModal(true)}>+ Nueva Granja</button>
       </div>
@@ -440,6 +391,7 @@ export default function GranjasEden() {
                     <th style={{ textAlign: 'center' }}>Entradas</th>
                     <th style={{ textAlign: 'center' }}>Salidas</th>
                     <th style={{ textAlign: 'center' }}>Balance</th>
+                    <th style={{ textAlign: 'center' }}>Deuda</th>
                     <th style={{ textAlign: 'center' }}>Estado</th>
                   </tr>
                 </thead>
@@ -448,9 +400,10 @@ export default function GranjasEden() {
                     <tr key={farm.id} onClick={() => window.location.href = `/projects/granjas-eden/${farm.slug}`} style={{ cursor: 'pointer', opacity: farm.status === 'active' ? 1 : 0.5 }}>
                       <td style={{ fontWeight: 600 }}>{farm.name}</td>
                       <td style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>{farm.owner || '—'}</td>
-                      <td style={{ textAlign: 'center', color: '#22c55e', fontWeight: 600 }}>{formatMoney(farm.entradas)}</td>
-                      <td style={{ textAlign: 'center', color: '#f87171', fontWeight: 600 }}>{formatMoney(farm.salidas)}</td>
+                      <td style={{ textAlign: 'center', color: '#f59e0b', fontWeight: 600 }}>{formatMoney(farm.entradas)}</td>
+                      <td style={{ textAlign: 'center', color: '#22c55e', fontWeight: 600 }}>{formatMoney(farm.salidas)}</td>
                       <td style={{ textAlign: 'center', color: (farm.balance || 0) >= 0 ? 'var(--gold-primary)' : '#f87171', fontWeight: 600 }}>{formatMoney(farm.balance)}</td>
+                      <td style={{ textAlign: 'center', color: farm.total_debt > 0 ? '#f87171' : 'var(--text-muted)', fontWeight: farm.total_debt > 0 ? 600 : 400 }}>{farm.total_debt > 0 ? formatMoney(farm.total_debt) : '—'}</td>
                       <td style={{ textAlign: 'center' }}><span className={`badge badge-${farm.status}`}>{farm.status === 'active' ? 'Activa' : 'Inactiva'}</span></td>
                     </tr>
                   ))}

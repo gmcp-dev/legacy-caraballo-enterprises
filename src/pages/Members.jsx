@@ -102,7 +102,7 @@ export default function Members() {
       <div className="members-header">
         <div>
           <h1 className="page-title">Miembros</h1>
-          <p className="page-subtitle">Socios, inversionistas y propietarios de LEGACY Caraballo Enterprises</p>
+          <p className="page-subtitle">Socios, inversionistas y proveedores de LEGACY Caraballo Enterprises</p>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button className="btn btn-outline" onClick={() => setShowRoles(!showRoles)}>
@@ -263,7 +263,7 @@ export default function Members() {
                       <span className="member-card-info-value">{member.projects.map(p => p.name).join(', ')}</span>
                     </div>
                   )}
-                  {member.roles.some(r => r.role === 'propietario') && member.farms.length > 0 && (
+                  {member.roles.some(r => r.role === 'proveedor') && member.farms.length > 0 && (
                     <div className="member-card-info-row">
                       <span className="member-card-info-label">Granjas</span>
                       <span className="member-card-info-value">{member.farms.map(f => f.name).join(', ')}</span>
