@@ -221,7 +221,9 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  startServer();
+  if (!isDev) {
+    startServer();
+  }
   createWindow();
   showSplashScreen();
 
