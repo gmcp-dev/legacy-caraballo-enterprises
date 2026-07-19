@@ -1,60 +1,36 @@
 const express = require('express');
 const router = express.Router();
 const db = require('./db');
-const { slugify, matchSlug } = require('./slugify');
+const { slugify } = require('./slugify');
+const { projects, getProjectBySlug } = require('./projects');
 
-const PROJECT_SELECT = `
-  SELECT p.*,
-    (SELECT COUNT(DISTINCT mp.member_id) FROM member_projects mp WHERE mp.project_id = p.id) as member_count,
-    (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE project_id = p.id AND type = 'investment') as total_invested,
-    (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE project_id = p.id AND type = 'earning') as total_earned,
-    (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE project_id = p.id AND type = 'expense') as total_expenses
-  FROM projects p
-`;
+function getProjectStats(project) {
+  const stats = db.prepare(`
+    SELECT
+      (SELECT COUNT(DISTINCT mp.member_id) FROM member_projects mp WHERE mp.project_id = ?) as member_count,
+      (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE project_id = ? AND type = 'investment') as total_invested,
+      (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE project_id = ? AND type = 'earning') as total_earned,
+      (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE project_id = ? AND type = 'expense') as total_expenses
+  `).get(project.id, project.id, project.id, project.id);
+
+  return { ...project, slug: slugify(project.name), ...stats };
+}
 
 // ==================== PROJECTS ====================
 
 router.get('/projects', (req, res) => {
-  const projects = db.prepare(`${PROJECT_SELECT} ORDER BY p.created_at DESC`).all();
-  projects.forEach(p => { p.slug = slugify(p.name); });
-  res.json(projects);
+  const result = projects.map(getProjectStats);
+  res.json(result);
 });
 
 router.get('/projects/:slug', (req, res) => {
-  const projects = db.prepare(PROJECT_SELECT).all();
-  const project = projects.find(p => matchSlug(p.name, req.params.slug));
+  const project = getProjectBySlug(req.params.slug);
   if (!project) return res.status(404).json({ error: 'Proyecto no encontrado' });
-  project.slug = slugify(project.name);
-  res.json(project);
-});
-
-router.post('/projects', (req, res) => {
-  const { name, description } = req.body;
-  if (!name) return res.status(400).json({ error: 'El nombre es requerido' });
-
-  const result = db.prepare('INSERT INTO projects (name, description) VALUES (?, ?)').run(name, description || '');
-  const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(result.lastInsertRowid);
-  project.slug = slugify(project.name);
-  res.status(201).json(project);
-});
-
-router.put('/projects/:slug', (req, res) => {
-  const projects = db.prepare('SELECT * FROM projects').all();
-  const project = projects.find(p => matchSlug(p.name, req.params.slug));
-  if (!project) return res.status(404).json({ error: 'Proyecto no encontrado' });
-
-  const { name, description, status } = req.body;
-  db.prepare('UPDATE projects SET name = ?, description = ?, status = ? WHERE id = ?')
-    .run(name || project.name, description ?? project.description, status || project.status, project.id);
-
-  const updated = db.prepare('SELECT * FROM projects WHERE id = ?').get(project.id);
-  updated.slug = slugify(updated.name);
-  res.json(updated);
+  res.json(getProjectStats(project));
 });
 
 router.get('/projects/:slug/socios', (req, res) => {
-  const projects = db.prepare('SELECT * FROM projects').all();
-  const project = projects.find(p => matchSlug(p.name, req.params.slug));
+  const project = getProjectBySlug(req.params.slug);
   if (!project) return res.status(404).json({ error: 'Proyecto no encontrado' });
 
   const socios = db.prepare(`
@@ -66,14 +42,12 @@ router.get('/projects/:slug/socios', (req, res) => {
 });
 
 router.put('/projects/:slug/socios', (req, res) => {
-  const projects = db.prepare('SELECT * FROM projects').all();
-  const project = projects.find(p => matchSlug(p.name, req.params.slug));
+  const project = getProjectBySlug(req.params.slug);
   if (!project) return res.status(404).json({ error: 'Proyecto no encontrado' });
 
   const { memberIds } = req.body;
   if (!Array.isArray(memberIds)) return res.status(400).json({ error: 'memberIds debe ser un array' });
 
-  const oldMembers = db.prepare('SELECT member_id FROM member_projects WHERE project_id = ?').all(project.id).map(r => r.member_id);
   const newMemberIds = memberIds.map(Number);
 
   db.prepare('DELETE FROM member_projects WHERE project_id = ?').run(project.id);
@@ -82,18 +56,18 @@ router.put('/projects/:slug/socios', (req, res) => {
 
   const socioSlug = 'socio';
   const insertRole = db.prepare('INSERT OR IGNORE INTO member_roles (member_id, role) VALUES (?, ?)');
-  const hasOtherProject = db.prepare('SELECT COUNT(*) as c FROM member_projects WHERE member_id = ? AND project_id != ?').get;
 
   for (const mid of newMemberIds) {
     insertRole.run(mid, socioSlug);
   }
 
-  const removedMembers = oldMembers.filter(id => !newMemberIds.includes(id));
-  for (const mid of removedMembers) {
-    const inOther = hasOtherProject(mid, project.id);
-    if (inOther.c === 0) {
-      db.prepare('DELETE FROM member_roles WHERE member_id = ? AND role = ?').run(mid, socioSlug);
-    }
+  const sociosToRemove = db.prepare(`
+    SELECT mr.member_id FROM member_roles mr
+    WHERE mr.role = ?
+    AND NOT EXISTS (SELECT 1 FROM member_projects mp WHERE mp.member_id = mr.member_id)
+  `).all(socioSlug);
+  for (const { member_id } of sociosToRemove) {
+    db.prepare('DELETE FROM member_roles WHERE member_id = ? AND role = ?').run(member_id, socioSlug);
   }
 
   const socios = db.prepare(`
@@ -107,8 +81,7 @@ router.put('/projects/:slug/socios', (req, res) => {
 // ==================== TRANSACTIONS ====================
 
 router.get('/projects/:slug/transactions', (req, res) => {
-  const projects = db.prepare('SELECT * FROM projects').all();
-  const project = projects.find(p => matchSlug(p.name, req.params.slug));
+  const project = getProjectBySlug(req.params.slug);
   if (!project) return res.status(404).json({ error: 'Proyecto no encontrado' });
 
   const transactions = db.prepare('SELECT * FROM transactions WHERE project_id = ? ORDER BY date DESC').all(project.id);
@@ -116,8 +89,7 @@ router.get('/projects/:slug/transactions', (req, res) => {
 });
 
 router.post('/projects/:slug/transactions', (req, res) => {
-  const projects = db.prepare('SELECT * FROM projects').all();
-  const project = projects.find(p => matchSlug(p.name, req.params.slug));
+  const project = getProjectBySlug(req.params.slug);
   if (!project) return res.status(404).json({ error: 'Proyecto no encontrado' });
 
   const { type, amount, description } = req.body;
@@ -136,8 +108,7 @@ router.post('/projects/:slug/transactions', (req, res) => {
 });
 
 router.delete('/projects/:slug/transactions/:transactionId', (req, res) => {
-  const projects = db.prepare('SELECT * FROM projects').all();
-  const project = projects.find(p => matchSlug(p.name, req.params.slug));
+  const project = getProjectBySlug(req.params.slug);
   if (!project) return res.status(404).json({ error: 'Proyecto no encontrado' });
 
   const tx = db.prepare('SELECT * FROM transactions WHERE id = ? AND project_id = ?').get(req.params.transactionId, project.id);
@@ -213,8 +184,6 @@ router.get('/treasury', (req, res) => {
 });
 
 router.get('/treasury/summary', (req, res) => {
-  const projects = db.prepare('SELECT id, name, status FROM projects').all();
-
   const projectData = projects.map(project => {
     const tx = db.prepare(`
       SELECT
@@ -255,9 +224,16 @@ router.get('/treasury/summary', (req, res) => {
   const totalPhysical = projectData.reduce((s, p) => s + p.physical, 0);
   const totalObjectValue = projectData.reduce((s, p) => s + p.objectValue, 0);
 
+  const generalNet = db.prepare(`
+    SELECT
+      COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) -
+      COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as net
+    FROM treasury_transactions WHERE source = 'general'
+  `).get().net;
+
   res.json({
-    balance: totalPhysical + totalObjectValue,
-    totalPhysical,
+    balance: totalPhysical + totalObjectValue + generalNet,
+    totalPhysical: totalPhysical + generalNet,
     totalObjectValue,
     projects: projectData,
   });
@@ -266,15 +242,17 @@ router.get('/treasury/summary', (req, res) => {
 // ==================== FINANCIAL SUMMARY ====================
 
 router.get('/finance/summary', (req, res) => {
+  const active_projects = projects.filter(p => p.status === 'active').length;
+
   const summary = db.prepare(`
     SELECT
-      (SELECT COUNT(*) FROM projects WHERE status = 'active') as active_projects,
       (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE type = 'investment') as total_invested,
       (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE type = 'earning') as total_earned,
       (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE type = 'expense') as total_expenses,
       (SELECT COUNT(DISTINCT member_id) FROM member_roles) as total_partners
   `).get();
 
+  summary.active_projects = active_projects;
   summary.balance = summary.total_earned - summary.total_expenses;
   summary.profit_margin = summary.total_earned > 0
     ? ((summary.balance / summary.total_earned) * 100).toFixed(1)
