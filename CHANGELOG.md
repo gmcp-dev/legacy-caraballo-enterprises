@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.1.13...v1.2.0) (2026-07-19)
+
+
+### Features
+
+* update currency formatting to use en-US locale across multiple components ([5e25614](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/5e25614aa8d718fe4b535dba79adfe50acc4c704))
+
+
+### Bug Fixes
+
+* correct treasury transaction type from 'salida' to 'entrada' ([7f023d9](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/7f023d9d73a7b4232f83d69adc0e85c77764ac6b))
+
 ### [1.1.13](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.1.12...v1.1.13) (2026-07-19)
 
 
