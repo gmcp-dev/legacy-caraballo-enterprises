@@ -1,7 +1,7 @@
 {
   "name": "legacy-caraballo-enterprises",
   "private": true,
-  "version": "1.1.11",
+  "version": "1.1.12",
   "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
@@ -61,12 +61,18 @@
       {
         "from": "server",
         "to": "server",
-        "filter": ["**/*", "!**/*.db", "!**/*.db-shm", "!**/*.db-wal"]
+        "filter": [
+          "**/*",
+          "!**/*.db",
+          "!**/*.db-shm",
+          "!**/*.db-wal"
+        ]
       }
     ]
   },
   "dependencies": {
     "electron-updater": "6.8.9",
+    "html-to-image": "^1.11.13",
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "react-router-dom": "7.18.1"

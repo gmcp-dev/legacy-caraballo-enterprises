@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.12](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.1.11...v1.1.12) (2026-07-19)
+
+
+### Bug Fixes
+
+* add filter to exclude database files from server resources ([b18232b](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/b18232b0aa3a957fd88bace9b93d32e0a0cac901))
+
 ### [1.1.11](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.1.10...v1.1.11) (2026-07-18)
 
 
