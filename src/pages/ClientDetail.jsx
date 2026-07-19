@@ -37,7 +37,7 @@ export default function ClientDetail() {
   const [receiptType, setReceiptType] = useState(null);
 
   const formatMoney = (amount) => {
-    return new Intl.NumberFormat('es-VE', { style: 'currency', currency: 'USD', currencyDisplay: 'narrowSymbol' }).format(amount || 0);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', currencyDisplay: 'narrowSymbol' }).format(amount || 0);
   };
 
   const fetchClient = useCallback(async () => {

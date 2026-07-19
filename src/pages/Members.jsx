@@ -94,7 +94,7 @@ export default function Members() {
   };
 
   const formatMoney = (amount) => {
-    return new Intl.NumberFormat('es-VE', { style: 'currency', currency: 'USD', currencyDisplay: 'narrowSymbol' }).format(amount || 0);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', currencyDisplay: 'narrowSymbol' }).format(amount || 0);
   };
 
   return (

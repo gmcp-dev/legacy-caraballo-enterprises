@@ -130,7 +130,7 @@ export default function GranjasEden() {
   };
 
   const formatMoney = (amount) => {
-    return new Intl.NumberFormat('es-VE', { style: 'currency', currency: 'USD', currencyDisplay: 'narrowSymbol' }).format(amount || 0);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', currencyDisplay: 'narrowSymbol' }).format(amount || 0);
   };
 
   const balance = (project?.total_earned || 0) - (project?.total_expenses || 0);

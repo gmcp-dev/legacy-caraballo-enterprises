@@ -14,7 +14,7 @@ export default function Dashboard() {
   }, []);
 
   const formatMoney = (amount) => {
-    return new Intl.NumberFormat('es-VE', { style: 'currency', currency: 'USD', currencyDisplay: 'narrowSymbol' }).format(amount);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', currencyDisplay: 'narrowSymbol' }).format(amount);
   };
 
   return (
