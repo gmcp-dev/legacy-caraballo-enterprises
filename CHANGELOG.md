@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.2.1](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.2.0...v1.2.1) (2026-07-19)
+
+
+### Features
+
+* configure API endpoint and proxy settings for local development ([313c8e1](https://github.com/gmcp-dev/legacy-caraballo-enterprises/commit/313c8e1f09d0c01381419bcc12373cea496436a5))
+
 ## [1.2.0](https://github.com/gmcp-dev/legacy-caraballo-enterprises/compare/v1.1.13...v1.2.0) (2026-07-19)
 
 
