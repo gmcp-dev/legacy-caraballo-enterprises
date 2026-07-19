@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import './GranjasEden.css';
 
-const API = 'http://localhost:3001/api';
+const API = '/api';
 const SLUG = 'granjas-eden';
 
 const PERIODS = [

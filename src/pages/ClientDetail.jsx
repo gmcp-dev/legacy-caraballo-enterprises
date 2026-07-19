@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import BankReceipt from '../components/BankReceipt';
 import './ClientDetail.css';
 
-const API = 'http://localhost:3001/api';
+const API = '/api';
 
 const statusColors = {
   active: '#22c55e',

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import './Finance.css';
 
-const API = 'http://localhost:3001/api';
+const API = '/api';
 
 const PERIODS = [
   { key: 'day', label: 'Hoy' },

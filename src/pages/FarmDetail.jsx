@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import './FarmDetail.css';
 
-const API = 'http://localhost:3001/api';
+const API = '/api';
 const PROJECT_SLUG = 'granjas-eden';
 
 const PERIODS = [

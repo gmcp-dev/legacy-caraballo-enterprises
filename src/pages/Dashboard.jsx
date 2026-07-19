@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './Dashboard.css';
 
-const API = 'http://localhost:3001/api';
+const API = '/api';
 
 export default function Dashboard() {
   const [projects, setProjects] = useState([]);
