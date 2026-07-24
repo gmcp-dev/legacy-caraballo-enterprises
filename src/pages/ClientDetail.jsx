@@ -43,12 +43,12 @@ export default function ClientDetail() {
   const fetchClient = useCallback(async () => {
     try {
       const res = await fetch(`${API}/bank/clients/${clientId}`);
-      if (!res.ok) { navigate('/projects/banco-maze'); return; }
+      if (!res.ok) { navigate('/projects/legacy-credits'); return; }
       const data = await res.json();
       setClient(data);
       setEditForm({ name: data.name, phone: data.phone || '', profile_link: data.profile_link || '' });
     } catch {
-      navigate('/projects/banco-maze');
+      navigate('/projects/legacy-credits');
     } finally {
       setLoading(false);
     }
@@ -131,7 +131,7 @@ export default function ClientDetail() {
     fetchClient();
   };
 
-  const deletePayment = async (id) => {
+  const _deletePayment = async (id) => {
     if (!confirm('Eliminar pago? Se reversara en tesoreria.')) return;
     await fetch(`${API}/bank/payments/${id}`, { method: 'DELETE' });
     fetchClient();
@@ -140,7 +140,7 @@ export default function ClientDetail() {
   const deleteClient = async () => {
     if (!confirm(`Eliminar cliente "${client.name}"?`)) return;
     const res = await fetch(`${API}/bank/clients/${clientId}`, { method: 'DELETE' });
-    if (res.ok) navigate('/projects/banco-maze');
+    if (res.ok) navigate('/projects/legacy-credits');
   };
 
   if (loading || !client) return null;
@@ -154,7 +154,7 @@ export default function ClientDetail() {
       <div className="client-detail-header">
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
-            <Link to="/projects/banco-maze" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '14px' }}>Banco MAZE</Link>
+            <Link to="/projects/legacy-credits" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '14px' }}>Legacy Credits</Link>
             <span style={{ color: 'var(--text-muted)', fontSize: '14px' }}>/</span>
             <h1 className="page-title" style={{ marginBottom: 0 }}>{editing ? '' : client.name}</h1>
           </div>

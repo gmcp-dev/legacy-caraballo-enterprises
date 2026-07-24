@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import BankReceipt from '../components/BankReceipt';
 import './BancoPage.css';
 
@@ -151,7 +150,7 @@ export default function BancoPage() {
     <div>
       <div className="bank-header">
         <div>
-          <h1 className="page-title">Banco MAZE</h1>
+          <h1 className="page-title">Legacy Credits</h1>
           <p className="page-subtitle">Sistema de prestamos y cobranzas</p>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -325,7 +324,7 @@ export default function BancoPage() {
                 </thead>
                 <tbody>
                   {clients.map(c => (
-                    <tr key={c.id} style={{ cursor: 'pointer' }} onClick={() => window.location.href = `/projects/banco-maze/clients/${c.id}`}>
+                    <tr key={c.id} style={{ cursor: 'pointer' }} onClick={() => window.location.href = `/projects/legacy-credits/clients/${c.id}`}>
                       <td style={{ fontWeight: 600 }}>{c.name}</td>
                       <td style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>{c.phone || '—'}</td>
                       <td style={{ textAlign: 'center' }}>{c.active_loans}</td>
