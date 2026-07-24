@@ -282,8 +282,13 @@ router.post('/projects/:slug/farms/:farmSlug/transactions', (req, res) => {
     .run(treasuryType, amount, description || `${farm.name}: ${type === 'entrada' ? 'Entrada' : 'Salida'}`, 'farm', farm.id, farm.name);
 
   if (type === 'entrada' && farm.owner && amount > 0) {
-    db.prepare('INSERT INTO farm_debts (farm_id, proveedor_name, total_amount, remaining, source_tx_id) VALUES (?, ?, ?, ?, ?)')
-      .run(farm.id, farm.owner, amount, amount, result.lastInsertRowid);
+    const existing = db.prepare('SELECT id, total_amount, remaining FROM farm_debts WHERE farm_id = ? AND proveedor_name = ? AND remaining > 0 ORDER BY created_at DESC LIMIT 1').get(farm.id, farm.owner);
+    if (existing) {
+      db.prepare('UPDATE farm_debts SET total_amount = total_amount + ?, remaining = remaining + ? WHERE id = ?').run(amount, amount, existing.id);
+    } else {
+      db.prepare('INSERT INTO farm_debts (farm_id, proveedor_name, total_amount, remaining, source_tx_id) VALUES (?, ?, ?, ?, ?)')
+        .run(farm.id, farm.owner, amount, amount, result.lastInsertRowid);
+    }
   }
 
   if (type === 'salida' && amount > 0) {
@@ -333,8 +338,17 @@ router.delete('/projects/:slug/farms/:farmSlug/transactions/:txId', (req, res) =
   db.prepare('DELETE FROM treasury_transactions WHERE source = ? AND source_id = ? AND amount = ? AND date = ?')
     .run('farm', farm.id, tx.amount, tx.date);
 
-  if (tx.type === 'entrada') {
-    db.prepare('DELETE FROM farm_debts WHERE source_tx_id = ?').run(tx.id);
+  if (tx.type === 'entrada' && farm.owner && tx.amount > 0) {
+    const debt = db.prepare('SELECT id, total_amount, remaining FROM farm_debts WHERE farm_id = ? AND proveedor_name = ? AND remaining > 0 ORDER BY created_at DESC LIMIT 1').get(farm.id, farm.owner);
+    if (debt) {
+      const newTotal = Math.max(0, debt.total_amount - tx.amount);
+      const newRemaining = Math.max(0, debt.remaining - tx.amount);
+      if (newRemaining <= 0) {
+        db.prepare('DELETE FROM farm_debts WHERE id = ?').run(debt.id);
+      } else {
+        db.prepare('UPDATE farm_debts SET total_amount = ?, remaining = ? WHERE id = ?').run(newTotal, newRemaining, debt.id);
+      }
+    }
   }
 
   if (tx.type === 'salida') {

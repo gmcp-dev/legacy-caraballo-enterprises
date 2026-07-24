@@ -152,7 +152,8 @@ db.exec(`
   INSERT OR IGNORE INTO role_definitions (name, slug, color, is_special) VALUES
     ('Socio', 'socio', '#60a5fa', 1),
     ('Inversionista', 'inversionista', '#22c55e', 1),
-    ('Proveedor', 'proveedor', '#a78bfa', 1);
+    ('Proveedor', 'proveedor', '#a78bfa', 1),
+    ('Empleado', 'empleado', '#f59e0b', 1);
 `);
 
 const ownerSlugMigration = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='role_definitions'").get();
@@ -393,6 +394,134 @@ for (const farm of farmsWithoutProducts) {
     const result = insertProduct.run(farm.id, p.name, p.icon, p.price);
     insertInventory.run(farm.id, result.lastInsertRowid);
   }
+}
+
+// ==================== BIG BISTEC TABLES ====================
+
+const bistecProductsInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='bistec_products'").get();
+if (!bistecProductsInfo) {
+  db.exec(`
+    CREATE TABLE bistec_products (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      cost_price REAL DEFAULT 0,
+      selling_price REAL DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE bistec_inventory (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER NOT NULL UNIQUE,
+      quantity REAL DEFAULT 0,
+      FOREIGN KEY (product_id) REFERENCES bistec_products(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE bistec_transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER NOT NULL,
+      type TEXT NOT NULL CHECK(type IN ('entrada')),
+      quantity REAL,
+      price REAL DEFAULT 0,
+      amount REAL NOT NULL,
+      description TEXT,
+      date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (product_id) REFERENCES bistec_products(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE bistec_deliveries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      member_id INTEGER NOT NULL,
+      product_id INTEGER NOT NULL,
+      quantity REAL NOT NULL,
+      cost_price REAL NOT NULL,
+      assigned_price REAL NOT NULL,
+      description TEXT,
+      status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'settled')),
+      date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
+      FOREIGN KEY (product_id) REFERENCES bistec_products(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE bistec_sales (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      delivery_id INTEGER NOT NULL,
+      product_id INTEGER NOT NULL,
+      member_id INTEGER NOT NULL,
+      quantity_sold REAL NOT NULL,
+      revenue REAL NOT NULL,
+      description TEXT,
+      date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (delivery_id) REFERENCES bistec_deliveries(id) ON DELETE CASCADE,
+      FOREIGN KEY (product_id) REFERENCES bistec_products(id) ON DELETE CASCADE,
+      FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE bistec_settlements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      delivery_id INTEGER NOT NULL UNIQUE,
+      product_id INTEGER NOT NULL,
+      member_id INTEGER NOT NULL,
+      quantity_returned REAL DEFAULT 0,
+      description TEXT,
+      date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (delivery_id) REFERENCES bistec_deliveries(id) ON DELETE CASCADE,
+      FOREIGN KEY (product_id) REFERENCES bistec_products(id) ON DELETE CASCADE,
+      FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
+    );
+  `);
+} else {
+  const salesInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='bistec_sales'").get();
+  if (!salesInfo) {
+    db.exec(`
+      CREATE TABLE bistec_sales (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        delivery_id INTEGER NOT NULL,
+        product_id INTEGER NOT NULL,
+        member_id INTEGER NOT NULL,
+        quantity_sold REAL NOT NULL,
+        revenue REAL NOT NULL,
+        description TEXT,
+        date DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (delivery_id) REFERENCES bistec_deliveries(id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES bistec_products(id) ON DELETE CASCADE,
+        FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
+      );
+    `);
+  }
+
+  const settlementDeliveryUnique = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='bistec_settlements'").get();
+  if (settlementDeliveryUnique && !settlementDeliveryUnique.sql.includes('UNIQUE')) {
+    db.exec(`
+      CREATE TABLE bistec_settlements_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        delivery_id INTEGER NOT NULL UNIQUE,
+        product_id INTEGER NOT NULL,
+        member_id INTEGER NOT NULL,
+        quantity_returned REAL DEFAULT 0,
+        description TEXT,
+        date DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (delivery_id) REFERENCES bistec_deliveries(id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES bistec_products(id) ON DELETE CASCADE,
+        FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
+      );
+      INSERT INTO bistec_settlements_new (id, delivery_id, product_id, member_id, quantity_returned, description, date)
+        SELECT id, delivery_id, product_id, member_id, quantity_returned, description, date FROM bistec_settlements;
+      DROP TABLE bistec_settlements;
+      ALTER TABLE bistec_settlements_new RENAME TO bistec_settlements;
+    `);
+  }
+}
+
+const bigBistecProjectId = 2;
+const staleBigBistecMembers = db.prepare(`
+  SELECT mp.member_id FROM member_projects mp
+  WHERE mp.project_id = 3
+  AND EXISTS (SELECT 1 FROM member_roles mr WHERE mr.member_id = mp.member_id AND mr.role = 'empleado')
+  AND NOT EXISTS (SELECT 1 FROM member_projects mp2 WHERE mp2.member_id = mp.member_id AND mp2.project_id = ?)
+`).all(bigBistecProjectId);
+for (const row of staleBigBistecMembers) {
+  db.prepare('DELETE FROM member_projects WHERE member_id = ? AND project_id = 3').run(row.member_id);
+  db.prepare('INSERT OR IGNORE INTO member_projects (member_id, project_id) VALUES (?, ?)').run(row.member_id, bigBistecProjectId);
 }
 
 module.exports = db;
