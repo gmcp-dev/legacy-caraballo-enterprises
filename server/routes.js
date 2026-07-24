@@ -196,15 +196,25 @@ router.get('/treasury/summary', (req, res) => {
     const physical = tx.total_earned - tx.total_expenses;
 
     let objectValue = 0;
-    const farms = db.prepare('SELECT id, name FROM farms WHERE project_id = ?').all(project.id);
-    for (const farm of farms) {
-      const inv = db.prepare(`
-        SELECT COALESCE(SUM(fi.quantity * fp.price), 0) as total
-        FROM farm_inventory fi
-        JOIN farm_products fp ON fi.product_id = fp.id
-        WHERE fi.farm_id = ?
-      `).get(farm.id);
-      objectValue += inv.total || 0;
+
+    if (project.id === 2) {
+      const bistecInv = db.prepare(`
+        SELECT COALESCE(SUM(fi.quantity * bp.cost_price), 0) as total
+        FROM bistec_inventory fi
+        JOIN bistec_products bp ON fi.product_id = bp.id
+      `).get();
+      objectValue = bistecInv?.total || 0;
+    } else {
+      const farms = db.prepare('SELECT id, name FROM farms WHERE project_id = ?').all(project.id);
+      for (const farm of farms) {
+        const inv = db.prepare(`
+          SELECT COALESCE(SUM(fi.quantity * fp.price), 0) as total
+          FROM farm_inventory fi
+          JOIN farm_products fp ON fi.product_id = fp.id
+          WHERE fi.farm_id = ?
+        `).get(farm.id);
+        objectValue += inv.total || 0;
+      }
     }
 
     return {
@@ -217,7 +227,6 @@ router.get('/treasury/summary', (req, res) => {
       total_earned: tx.total_earned,
       total_expenses: tx.total_expenses,
       total_invested: tx.total_invested,
-      farmCount: farms.length,
     };
   });
 

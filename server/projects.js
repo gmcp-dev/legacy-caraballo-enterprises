@@ -8,7 +8,14 @@ const projects = [
   },
   {
     id: 2,
-    name: 'Banco MAZE',
+    name: 'Big Bistec',
+    description: 'Restaurante y distribución de productos',
+    status: 'active',
+    icon: 'fa-solid fa-utensils',
+  },
+  {
+    id: 3,
+    name: 'Legacy Credits',
     description: 'Sistema de préstamos y cobranzas',
     status: 'active',
     icon: 'fa-solid fa-building-columns',

@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const db = require('./db');
-const { getProjectById } = require('./projects');
 
-const PROJECT_ID = 2;
+const PROJECT_ID = 3;
 
 function getClientStats(clientId) {
   const stats = db.prepare(`
@@ -159,7 +158,7 @@ router.post('/bank/loans', (req, res) => {
     .run(client_id, amt, pct, total_to_pay, deadline, description || '');
 
   db.prepare("INSERT INTO treasury_transactions (type, amount, description, source, source_id, source_name) VALUES (?, ?, ?, ?, ?, ?)")
-    .run('expense', amt, `Prestamo a ${client.name}: ${description || ''}`.trim(), 'project', PROJECT_ID, 'Banco MAZE');
+    .run('expense', amt, `Prestamo a ${client.name}: ${description || ''}`.trim(), 'project', PROJECT_ID, 'Legacy Credits');
 
   const loan = db.prepare('SELECT * FROM bank_loans WHERE id = ?').get(result.lastInsertRowid);
   loan.paid = 0;
@@ -198,7 +197,7 @@ router.delete('/bank/loans/:id', (req, res) => {
   const paid = getLoanRemaining(loan.id);
   if (paid > 0) {
     db.prepare("INSERT INTO treasury_transactions (type, amount, description, source, source_id, source_name) VALUES (?, ?, ?, ?, ?, ?)")
-      .run('income', paid, `Devolucion prestamo: ${client ? client.name : 'N/A'}`, 'project', PROJECT_ID, 'Banco MAZE');
+      .run('income', paid, `Devolucion prestamo: ${client ? client.name : 'N/A'}`, 'project', PROJECT_ID, 'Legacy Credits');
   }
 
   db.prepare('DELETE FROM bank_loans WHERE id = ?').run(loan.id);
@@ -240,7 +239,7 @@ router.post('/bank/loans/:id/pay', (req, res) => {
 
   const client = db.prepare('SELECT name FROM bank_clients WHERE id = ?').get(loan.client_id);
   db.prepare("INSERT INTO treasury_transactions (type, amount, description, source, source_id, source_name) VALUES (?, ?, ?, ?, ?, ?)")
-    .run('income', actualPay, `Pago de ${client ? client.name : 'N/A'}: prestamo #${loan.id}`, 'project', PROJECT_ID, 'Banco MAZE');
+    .run('income', actualPay, `Pago de ${client ? client.name : 'N/A'}: prestamo #${loan.id}`, 'project', PROJECT_ID, 'Legacy Credits');
 
   updateLoanStatus(loan.id);
 
@@ -262,7 +261,7 @@ router.delete('/bank/payments/:id', (req, res) => {
   const client = loan ? db.prepare('SELECT name FROM bank_clients WHERE id = ?').get(loan.client_id) : null;
 
   db.prepare("INSERT INTO treasury_transactions (type, amount, description, source, source_id, source_name) VALUES (?, ?, ?, ?, ?, ?)")
-    .run('expense', payment.amount, `Reverso pago: ${client ? client.name : 'N/A'}: prestamo #${payment.loan_id}`, 'project', PROJECT_ID, 'Banco MAZE');
+    .run('expense', payment.amount, `Reverso pago: ${client ? client.name : 'N/A'}: prestamo #${payment.loan_id}`, 'project', PROJECT_ID, 'Legacy Credits');
 
   db.prepare('DELETE FROM bank_payments WHERE id = ?').run(payment.id);
 
